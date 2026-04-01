@@ -1190,16 +1190,23 @@ function renderMap() {
   // Scale: 1 ft = ~18px
   const SCALE = 18;
 
+  canvas.style.width  = Math.round(700 * mapZoom) + "px";
+  canvas.style.height = Math.round(600 * mapZoom) + "px";
   canvas.innerHTML = beds.map(b => {
     const pw = Math.max(60, b.w * SCALE), ph = Math.max(44, b.l * SCALE);
     const plants = (bedPlants[b.name]||[]).slice(0,5).map(p=>EMOJI[p.crop]||"🌱").join("");
     const total = bedHarvestTotals[b.name]||0;
     const isOval = b.shape==="oval"||b.shape==="container";
     const br = isOval ? "50%" : b.shape==="container"?"10px":"6px";
+    const zx = Math.round(b.x * mapZoom);
+    const zy = Math.round(b.y * mapZoom);
+    const zpw = Math.round(pw * mapZoom);
+    const zph = Math.round(ph * mapZoom);
+    const zfs = Math.round(9 * mapZoom);
     return `<div class="map-bed ${selectedBedId===b.id?'selected':''}"
       id="mapbed-${b.id}"
       data-id="${b.id}"
-      style="left:${b.x}px;top:${b.y}px;width:${pw}px;height:${ph}px;background:${b.color};border-radius:${br}"
+      style="left:${zx}px;top:${zy}px;width:${zpw}px;height:${zph}px;background:${b.color};border-radius:${br};font-size:${zfs}px"
       ontouchstart="startDrag(event,'${b.id}')"
       onmousedown="startDrag(event,'${b.id}')"
       onclick="selectMapBed('${b.id}')">
@@ -1313,21 +1320,25 @@ function setupDrag(canvas) {
     e.preventDefault();
     const pt = e.touches ? e.touches[0] : e;
     const rect = canvas.getBoundingClientRect();
-    const el = dragState.el;
-    const nx = (pt.clientX - rect.left) / mapZoom - dragState.ox;
-    const ny = (pt.clientY - rect.top) / mapZoom - dragState.oy;
-    const maxX = 700 - el.clientWidth;
-    const maxY = 600 - el.clientHeight;
-    el.style.left = Math.max(0,Math.min(nx,maxX))+"px";
-    el.style.top = Math.max(0,Math.min(ny,maxY))+"px";
-    if (Math.abs(nx - dragState.startX) > 5 || Math.abs(ny - dragState.startY) > 5) dragState.moved = true;
+    // All math in logical (unzoomed) coordinates
+    const logicalX = (pt.clientX - rect.left) / mapZoom;
+    const logicalY = (pt.clientY - rect.top)  / mapZoom;
+    const SCALE = 18;
+    const bed = beds.find(b => b.id === dragState.id);
+    const pw = Math.max(60, bed.w * SCALE);
+    const ph = Math.max(44, bed.l * SCALE);
+    const nx = Math.max(0, Math.min(700 - pw, logicalX - dragState.ox));
+    const ny = Math.max(0, Math.min(600 - ph, logicalY - dragState.oy));
+    // Update logical position in beds array immediately for smooth drag
+    beds = beds.map(b => b.id === dragState.id ? {...b, x: nx, y: ny} : b);
+    // Move the element visually
+    dragState.el.style.left = Math.round(nx * mapZoom) + "px";
+    dragState.el.style.top  = Math.round(ny * mapZoom) + "px";
+    if (Math.abs(nx - dragState.startX) > 3 || Math.abs(ny - dragState.startY) > 3) dragState.moved = true;
   };
   const onEnd = () => {
     if (!dragState) return;
     if (dragState.moved) {
-      const id = dragState.id;
-      const el = dragState.el;
-      beds = beds.map(b=>b.id===id?{...b,x:parseInt(el.style.left),y:parseInt(el.style.top)}:b);
       saveBeds();
     }
     dragState = null;
@@ -1341,32 +1352,50 @@ function setupDrag(canvas) {
 function startDrag(e, id) {
   const el = document.getElementById("mapbed-"+id);
   const canvas = document.getElementById("map-canvas");
-  const viewport = document.getElementById("map-viewport");
   const rect = canvas.getBoundingClientRect();
   const pt = e.touches ? e.touches[0] : e;
+  // Convert screen px to logical canvas px
+  const logicalX = (pt.clientX - rect.left) / mapZoom;
+  const logicalY = (pt.clientY - rect.top)  / mapZoom;
+  const bed = beds.find(b => b.id === id);
   dragState = {
     id, el, moved: false,
-    ox: pt.clientX - rect.left - parseInt(el.style.left),
-    oy: pt.clientY - rect.top - parseInt(el.style.top),
-    startX: parseInt(el.style.left),
-    startY: parseInt(el.style.top),
+    ox: logicalX - bed.x,
+    oy: logicalY - bed.y,
+    startX: bed.x,
+    startY: bed.y,
   };
   e.stopPropagation();
+  e.preventDefault();
 }
 
 let mapZoom = 1;
 function adjustZoom(delta) {
   mapZoom = Math.max(0.4, Math.min(2.0, mapZoom + delta));
-  const canvas = document.getElementById("map-canvas");
-  canvas.style.transform = `scale(${mapZoom})`;
-  canvas.style.transformOrigin = "top left";
-  canvas.style.width = (700 / mapZoom) + "px";
+  applyZoom();
 }
 function resetZoom() {
   mapZoom = 1;
+  applyZoom();
+}
+function applyZoom() {
   const canvas = document.getElementById("map-canvas");
-  canvas.style.transform = "";
-  canvas.style.width = "700px";
+  // Scale the canvas itself — beds keep their logical px positions
+  canvas.style.width = Math.round(700 * mapZoom) + "px";
+  canvas.style.height = Math.round(600 * mapZoom) + "px";
+  // Scale all beds
+  beds.forEach(b => {
+    const el = document.getElementById("mapbed-" + b.id);
+    if (!el) return;
+    const SCALE = 18;
+    const pw = Math.max(60, b.w * SCALE);
+    const ph = Math.max(44, b.l * SCALE);
+    el.style.left = Math.round(b.x * mapZoom) + "px";
+    el.style.top  = Math.round(b.y * mapZoom) + "px";
+    el.style.width  = Math.round(pw * mapZoom) + "px";
+    el.style.height = Math.round(ph * mapZoom) + "px";
+    el.style.fontSize = Math.round(9 * mapZoom) + "px";
+  });
 }
 
 function selectBed(id) { selectedBedId=selectedBedId===id?null:id; renderMap(); }
