@@ -455,8 +455,8 @@
       <!-- Zoom controls: plain row above canvas, never clipped -->
       <div style="display:flex;justify-content:flex-end;gap:6px;padding:6px 14px 4px">
         <button onclick="fitCanvasToBeds()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--muted2);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:Georgia,serif;letter-spacing:0.5px">FIT</button>
-        <button onclick="adjustZoom(-0.25)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:20px;cursor:pointer">−</button>
-        <button onclick="adjustZoom(0.25)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:20px;cursor:pointer">+</button>
+        <button onclick="adjustZoom(-0.1)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:20px;cursor:pointer">−</button>
+        <button onclick="adjustZoom(0.1)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:20px;cursor:pointer">+</button>
       </div>
       <!-- Canvas: fixed 300px height so page is always scrollable below -->
       <div id="map-scroll-wrap" style="margin:0 14px;border-radius:12px;border:1px solid var(--border);overflow:hidden">
@@ -1863,6 +1863,13 @@ function saveBed() {
   saveBeds(); closeBedModal(); renderMap(); toast("✓ Bed saved!");
 }
 
+function deletePlantEntry(id) {
+  plantLog = plantLog.filter(function(p){ return p.id !== id; });
+  savePlants();
+  renderMap();
+  toast("Plant removed");
+}
+
 function deleteBed(id) {
   if (!confirm("Delete this bed?")) return;
   beds = beds.filter(b=>b.id!==id);
@@ -2035,7 +2042,15 @@ function renderMap() {
   if (pl) {
     if (!plantLog.length) { pl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0 20px">No plants logged yet</div>'; return; }
     var phtml = plantLog.map(function(p) {
-      return '<div class="plant-row"><div class="plant-dot" style="background:'+(COLORS[p.crop]||'#8fba6a')+'"></div><div style="flex:1"><div class="plant-name">'+(EMOJI[p.crop]||"")+" "+p.variety+' <span style="font-size:11px;color:var(--muted)">'+p.bed+'</span></div><div class="plant-sub">'+p.count+' plant'+(p.count!==1?'s':'')+(p.seedDate?' · '+p.seedDate:'')+(p.transplantDate?' · '+p.transplantDate:'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--muted2);font-style:italic">'+p.notes+'</div>':'')+'</div><span class="plant-status" style="background:'+statusColor(p.status)+'22;color:'+statusColor(p.status)+';font-size:10px">'+p.status+'</span></div>';
+      return '<div class="plant-row" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+        '<div class="plant-dot" style="background:'+(COLORS[p.crop]||'#8fba6a')+';width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0"></div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;font-weight:bold">'+(EMOJI[p.crop]||'')+" "+p.variety+' <span style="font-size:11px;color:var(--muted);font-weight:normal">'+p.bed+'</span></div>' +
+          '<div style="font-size:11px;color:var(--muted)">'+p.count+' plant'+(p.count!==1?'s':'')+(p.seedDate?' · '+p.seedDate:'')+'</div>' +
+          (p.notes?'<div style="font-size:11px;color:var(--muted2);font-style:italic">'+p.notes+'</div>':'') +
+        '</div>' +
+        '<button data-delid="'+p.id+'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0" title="Remove">×</button>' +
+      '</div>';
     }).join("");
     pl.innerHTML = phtml;
   }
@@ -2185,8 +2200,7 @@ function startDrag(e, id) {
   var canvas = document.getElementById("map-canvas");
   var rect = canvas.getBoundingClientRect();
   var pt = e.touches ? e.touches[0] : e;
-  var MARGIN = 60;
-  // Convert screen px to logical canvas px, accounting for lot margin offset
+  var MARGIN = 80;
   var logicalX = (pt.clientX - rect.left) / mapZoom - MARGIN;
   var logicalY = (pt.clientY - rect.top)  / mapZoom - MARGIN;
   var bed = beds.find(function(b){return b.id===id;});
@@ -2198,8 +2212,6 @@ function startDrag(e, id) {
     startX: bed.x,
     startY: bed.y,
   };
-  e.stopPropagation();
-  e.preventDefault();
 }
 
 let mapZoom = 1;
@@ -3290,6 +3302,22 @@ function renderAll() {
 }
 
 loadData();
+
+// Plant delete handler
+document.addEventListener('click', function(e) {
+  var el = e.target;
+  for (var i = 0; i < 4 && el; i++) {
+    var id = el.getAttribute && el.getAttribute('data-delid');
+    if (id) {
+      plantLog = plantLog.filter(function(p){ return p.id !== id; });
+      savePlants();
+      renderMap();
+      toast("Plant removed");
+      return;
+    }
+    el = el.parentElement;
+  }
+});
 
 // Rotate handled via action bar buttons
 </script>
