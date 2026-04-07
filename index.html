@@ -414,23 +414,64 @@
 <!-- ===== GARDEN MAP ===== -->
 <div class="view" id="view-map">
   <div class="header">
-    <div><div class="header-title">Garden Map</div><div class="header-sub">Drag beds to arrange · Tap for details</div></div>
+    <div><div class="header-title">Garden Map</div><div class="header-sub" id="map-location-sub">Enter address for satellite view</div></div>
     <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="showBedSetup()">+ Add Bed</button>
   </div>
 
-  <!-- MAP CANVAS -->
-  <div class="map-wrap">
-    <div id="map-scroll-wrap" style="margin:0 14px;border-radius:12px;border:1px solid var(--border);overflow:hidden;position:relative">
-      <div id="map-zoom-controls" style="position:absolute;top:8px;right:8px;z-index:10;display:flex;flex-direction:column;gap:4px">
-        <button onclick="adjustZoom(0.2)" style="background:#ffffffee;border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-        <button onclick="adjustZoom(-0.2)" style="background:#ffffffee;border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-        <button onclick="resetZoom()" style="background:#ffffffee;border:1px solid var(--border2);color:var(--muted);border-radius:6px;width:32px;height:28px;font-size:9px;cursor:pointer;letter-spacing:0.5px">FIT</button>
-      </div>
-      <div id="map-viewport" style="overflow:auto;height:420px;touch-action:pan-x pan-y">
-        <div id="map-canvas" style="background:#f0ede4;position:relative;height:600px;width:700px;touch-action:none"></div>
-      </div>
+  <!-- ADDRESS SEARCH -->
+  <div style="padding:10px 14px 0;display:flex;gap:8px">
+    <input type="text" id="map-address-input" placeholder="236 Tullulah Ave, River Ridge, LA"
+      style="flex:1;background:#fff;border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;font-family:Georgia,serif;color:var(--text)"
+      onkeydown="if(event.key==='Enter')searchMapAddress()">
+    <button onclick="searchMapAddress()" class="btn btn-primary" style="padding:9px 14px;font-size:13px">Go</button>
+  </div>
+
+  <!-- MAP TABS -->
+  <div style="padding:8px 14px 0">
+    <div class="type-tabs" style="margin-bottom:0">
+      <button class="type-tab" id="maptab-satellite" onclick="setMapTab('satellite')">📏 Lot View</button>
+      <button class="type-tab active" id="maptab-canvas" onclick="setMapTab('canvas')">📐 Layout</button>
     </div>
-    <div id="bed-detail-panel" style="margin:10px 14px 0"></div>
+  </div>
+
+  <!-- LOT VIEW -->
+  <div id="map-satellite-view" style="display:none;margin:10px 14px 0">
+    <div class="card">
+      <div class="card-title">Lot Dimensions</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div class="field" style="flex:1;margin:0">
+          <label>Lot width (ft)</label>
+          <input type="number" id="lot-width" placeholder="e.g. 60"
+            style="width:100%;background:#fff;border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:15px;font-family:Georgia,serif"
+            onchange="saveLotDimensions()">
+        </div>
+        <div class="field" style="flex:1;margin:0">
+          <label>Lot depth (ft)</label>
+          <input type="number" id="lot-depth" placeholder="e.g. 120"
+            style="width:100%;background:#fff;border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:15px;font-family:Georgia,serif"
+            onchange="saveLotDimensions()">
+        </div>
+      </div>
+      <canvas id="lot-canvas" style="width:100%;border-radius:8px;border:1px solid var(--border);background:#f8f5ee;display:block"></canvas>
+      <div id="lot-stats" style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- CANVAS/LAYOUT VIEW -->
+  <div id="map-canvas-view">
+    <div class="map-wrap">
+      <div id="map-scroll-wrap" style="margin:0 14px;border-radius:12px;border:1px solid var(--border);overflow:hidden;position:relative">
+        <div id="map-zoom-controls" style="position:absolute;top:8px;right:8px;z-index:10;display:flex;flex-direction:column;gap:4px">
+          <button onclick="adjustZoom(0.2)" style="background:#ffffffee;border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+          <button onclick="adjustZoom(-0.2)" style="background:#ffffffee;border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+          <button onclick="fitCanvasToBeds()" style="background:#ffffffee;border:1px solid var(--border2);color:var(--muted);border-radius:6px;width:32px;height:28px;font-size:9px;cursor:pointer;letter-spacing:0.5px">FIT</button>
+        </div>
+        <div id="map-viewport" style="overflow:auto;height:420px;touch-action:pan-x pan-y">
+          <div id="map-canvas" style="background:#f0ede4;position:relative;height:600px;width:700px;touch-action:none"></div>
+        </div>
+      </div>
+      <div id="bed-detail-panel" style="margin:10px 14px 0"></div>
+    </div>
   </div>
 
   <!-- BED TABLE -->
@@ -741,6 +782,21 @@
     </div>
 
     <div id="setup-step-5" style="display:none">
+      <div style="font-size:32px;text-align:center;margin-bottom:12px">📏</div>
+      <h2 style="font-size:20px;font-weight:normal;color:#2a4a1a;text-align:center;margin-bottom:8px">What are your lot dimensions?</h2>
+      <p style="font-size:13px;color:#7a6e58;text-align:center;margin-bottom:20px">Used to draw your garden map to scale. You can find this on your county assessor's website.</p>
+      <div class="field-row">
+        <div class="field"><label>Lot width (ft)</label><input type="number" id="setup-lot-w" placeholder="e.g. 60" style="font-size:16px"></div>
+        <div class="field"><label>Lot depth (ft)</label><input type="number" id="setup-lot-d" placeholder="e.g. 120" style="font-size:16px"></div>
+      </div>
+      <div style="font-size:12px;color:#7a6e58;text-align:center;margin-bottom:16px">Not sure? Check qpublic.net or your county assessor's website</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="prevSetupStep()">← Back</button>
+        <button class="btn btn-primary" style="flex:2" onclick="nextSetupStep()">Continue →</button>
+      </div>
+    </div>
+
+    <div id="setup-step-6" style="display:none">
       <div style="font-size:32px;text-align:center;margin-bottom:12px">⚖️</div>
       <h2 style="font-size:20px;font-weight:normal;color:#2a4a1a;text-align:center;margin-bottom:8px">Preferred weight unit</h2>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0">
@@ -767,7 +823,7 @@
       </div>
     </div>
 
-    <div id="setup-step-6" style="display:none">
+    <div id="setup-step-7" style="display:none">
       <div style="font-size:40px;text-align:center;margin-bottom:16px">✅</div>
       <h2 style="font-size:22px;font-weight:normal;color:#2a4a1a;text-align:center;margin-bottom:8px">You're all set!</h2>
       <div id="setup-summary" style="background:#f0ede4;border-radius:10px;padding:16px;margin:20px 0;font-size:13px;line-height:2;color:#5a5040"></div>
@@ -1455,9 +1511,107 @@ function confirmDelete() {
   closeDeleteModal(); toast("Deleted");
 }
 
+// ===================== LOT VIEW =====================
+let lotWidth = parseFloat(localStorage.getItem("gl-lot-width")) || 60;
+let lotDepth = parseFloat(localStorage.getItem("gl-lot-depth")) || 132;
+// 236 Tullulah Ave defaults — update after checking Jefferson Parish assessor
+
+function saveLotDimensions() {
+  const w = parseFloat(document.getElementById("lot-width").value) || 60;
+  const d = parseFloat(document.getElementById("lot-depth").value) || 120;
+  lotWidth = w; lotDepth = d;
+  localStorage.setItem("gl-lot-width", w);
+  localStorage.setItem("gl-lot-depth", d);
+  drawLotCanvas();
+}
+
+function initLotView() {
+  const wEl = document.getElementById("lot-width");
+  const dEl = document.getElementById("lot-depth");
+  if (wEl) wEl.value = lotWidth;
+  if (dEl) dEl.value = lotDepth;
+  drawLotCanvas();
+}
+
+function drawLotCanvas() {
+  const canvas = document.getElementById("lot-canvas");
+  if (!canvas) return;
+  const w = lotWidth || 60;
+  const d = lotDepth || 120;
+  const SCALE = Math.min(4.0, Math.min(280 / w, 380 / d));
+  const cw = Math.round(w * SCALE) + 60;
+  const ch = Math.round(d * SCALE) + 60;
+  canvas.width = cw;
+  canvas.height = ch;
+  canvas.style.maxHeight = "400px";
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, cw, ch);
+  const ox = 30, oy = 30;
+  const lw = Math.round(w * SCALE);
+  const lh = Math.round(d * SCALE);
+
+  // Draw lot outline
+  ctx.fillStyle = "#e8f0df";
+  ctx.fillRect(ox, oy, lw, lh);
+  ctx.strokeStyle = "#4a7a32";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(ox, oy, lw, lh);
+
+  // Draw beds as overlays
+  const BSCALE = SCALE;
+  beds.forEach(b => {
+    const bw = Math.max(60, b.w * 18);
+    const bh = Math.max(44, b.l * 18);
+    // Convert canvas px to feet (canvas px / 18 = feet, then * SCALE)
+    const bxFt = b.x / 18;
+    const byFt = b.y / 18;
+    const bxPx = ox + bxFt * SCALE;
+    const byPx = oy + byFt * SCALE;
+    const bwPx = b.w * SCALE;
+    const bhPx = b.l * SCALE;
+    const isOval = b.shape === "oval" || b.shape === "container";
+    ctx.fillStyle = b.color + "cc";
+    if (isOval) {
+      ctx.beginPath();
+      ctx.ellipse(bxPx + bwPx/2, byPx + bhPx/2, bwPx/2, bhPx/2, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(bxPx, byPx, bwPx, bhPx);
+      ctx.strokeRect(bxPx, byPx, bwPx, bhPx);
+    }
+    // Label
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${Math.max(8, Math.round(9 * SCALE / 3))}px Georgia`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const label = b.name.length > 10 ? b.name.slice(0,10)+"…" : b.name;
+    ctx.fillText(label, bxPx + bwPx/2, byPx + bhPx/2);
+  });
+
+  // Dimension labels
+  ctx.fillStyle = "#5a5040";
+  ctx.font = "11px Georgia";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // Width label (top)
+  ctx.fillText(w + " ft", ox + lw/2, oy - 15);
+  // Depth label (left, rotated)
+  ctx.save();
+  ctx.translate(ox - 15, oy + lh/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(d + " ft", 0, 0);
+  ctx.restore();
+
+  // Stats
+  const sqft = w * d;
+  const statsEl = document.getElementById("lot-stats");
+  if (statsEl) statsEl.textContent = `${w} × ${d} ft · ${sqft.toLocaleString()} sq ft · ${(sqft * 0.0929).toFixed(0)} m²`;
+}
+
 // ===================== SATELLITE MAP =====================
 let leafletMap = null;
-let mapTab = "satellite";
+let mapTab = "canvas";
 let gardenAddress = localStorage.getItem("gl-garden-address") || "236 Tullulah Ave, River Ridge, LA";
 
 function setMapTab(t) {
@@ -1467,49 +1621,59 @@ function setMapTab(t) {
   document.getElementById("map-satellite-view").style.display = t==="satellite" ? "block" : "none";
   document.getElementById("map-canvas-view").style.display = t==="canvas" ? "block" : "none";
   if (t==="satellite") {
-    setTimeout(() => { if(leafletMap) { leafletMap.invalidateSize(); } }, 150);
+    setTimeout(() => initLotView(), 100);
   }
   if (t==="canvas") {
-    setTimeout(() => fitCanvasToBeds(), 100);
+    setTimeout(() => { renderMap(); setTimeout(fitCanvasToBeds, 100); }, 50);
   }
 }
 
 function fitCanvasToBeds() {
-  if (!beds.length) return;
   const SCALE = 18;
-  const padding = 20;
-  // Find extents
-  let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+  const padding = 24;
+  let minX = 0, minY = 0, maxX = 0, maxY = 0;
+  // Include lot boundary in fit calculation
+  if (lotWidth > 0) {
+    maxX = Math.max(maxX, lotWidth * SCALE + 80);
+    maxY = Math.max(maxY, lotDepth * SCALE + 80);
+  }
+  if (!beds.length && lotWidth === 0) return;
   beds.forEach(b => {
     const pw = Math.max(60, b.w * SCALE);
     const ph = Math.max(44, b.l * SCALE);
-    minX = Math.min(minX, b.x);
-    minY = Math.min(minY, b.y);
-    maxX = Math.max(maxX, b.x + pw);
-    maxY = Math.max(maxY, b.y + ph);
+    maxX = Math.max(maxX, b.x + pw + 20);
+    maxY = Math.max(maxY, b.y + ph + 20);
   });
-  // Calc zoom to fit viewport
   const viewport = document.getElementById("map-viewport");
-  if (!viewport) return;
+  const canvas = document.getElementById("map-canvas");
+  if (!viewport || !canvas) return;
   const vw = viewport.clientWidth - padding * 2;
   const vh = viewport.clientHeight - padding * 2;
-  const contentW = maxX - minX + padding * 2;
-  const contentH = maxY - minY + padding * 2;
-  const zoomFit = Math.min(1.0, Math.min(vw / contentW, vh / contentH));
-  mapZoom = Math.max(0.4, Math.min(1.0, zoomFit));
-  // Scroll to center on beds
-  const canvas = document.getElementById("map-canvas");
-  if (canvas) {
-    canvas.style.width = Math.round(700 * mapZoom) + "px";
-    canvas.style.height = Math.round(600 * mapZoom) + "px";
-  }
-  // Re-render beds at new zoom
-  renderMap();
-  // Scroll viewport to show beds
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
+  if (contentW <= 0 || contentH <= 0) return;
+  // Calculate zoom to fit all beds
+  mapZoom = Math.max(0.3, Math.min(1.5, Math.min(vw / contentW, vh / contentH)));
+  // Apply zoom to canvas size
+  canvas.style.width = Math.round(700 * mapZoom) + "px";
+  canvas.style.height = Math.round(600 * mapZoom) + "px";
+  // Move all bed elements to zoomed positions without re-rendering
+  beds.forEach(b => {
+    const el = document.getElementById("mapbed-" + b.id);
+    if (!el) return;
+    const pw = Math.max(60, b.w * SCALE);
+    const ph = Math.max(44, b.l * SCALE);
+    el.style.left = Math.round(b.x * mapZoom) + "px";
+    el.style.top  = Math.round(b.y * mapZoom) + "px";
+    el.style.width  = Math.round(pw * mapZoom) + "px";
+    el.style.height = Math.round(ph * mapZoom) + "px";
+    el.style.fontSize = Math.round(9 * mapZoom) + "px";
+  });
+  // Scroll to show beds centered
   setTimeout(() => {
-    viewport.scrollLeft = Math.max(0, minX * mapZoom - padding);
-    viewport.scrollTop = Math.max(0, minY * mapZoom - padding);
-  }, 50);
+    viewport.scrollLeft = Math.max(0, Math.round(minX * mapZoom) - padding);
+    viewport.scrollTop  = Math.max(0, Math.round(minY * mapZoom) - padding);
+  }, 30);
 }
 
 function initLeafletMap(lat, lon, zoom) {
@@ -1517,36 +1681,42 @@ function initLeafletMap(lat, lon, zoom) {
     leafletMap.setView([lat, lon], zoom || 19);
     return;
   }
-  leafletMap = L.map("leaflet-map", { zoomControl: true, attributionControl: true }).setView([lat, lon], zoom || 19);
-  
-  // Primary: Esri World Imagery satellite
+  leafletMap = L.map("leaflet-map", {
+    zoomControl: true,
+    attributionControl: true,
+    preferCanvas: true
+  }).setView([lat, lon], zoom || 19);
+
+  let tilesLoaded = false;
+
+  // Try Esri World Imagery first (best satellite quality)
   const esriSat = L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { attribution: "Tiles &copy; Esri", maxZoom: 21, crossOrigin: true }
-  );
-  
-  // Fallback: OpenStreetMap if Esri fails
-  const osmFallback = L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19, crossOrigin: true }
-  );
+    { attribution: "Tiles &copy; Esri &mdash; Source: Esri, USGS", maxZoom: 20 }
+  ).addTo(leafletMap);
 
-  esriSat.addTo(leafletMap);
-  
-  // If Esri tiles fail to load, switch to OSM
-  esriSat.on("tileerror", function() {
-    if (leafletMap.hasLayer(esriSat)) {
-      leafletMap.removeLayer(esriSat);
-      osmFallback.addTo(leafletMap);
-      const sub = document.getElementById("map-location-sub");
-      if(sub) sub.textContent += " (map view — satellite unavailable)";
-    }
+  esriSat.on("tileload", function() {
+    tilesLoaded = true;
+    const msg = document.getElementById("map-loading-msg");
+    if (msg) msg.style.display = "none";
   });
 
-  // Labels overlay
+  // After 4 seconds, if no tiles loaded switch to OSM
+  setTimeout(function() {
+    if (!tilesLoaded && leafletMap) {
+      leafletMap.removeLayer(esriSat);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors", maxZoom: 19
+      }).addTo(leafletMap);
+      const sub = document.getElementById("map-location-sub");
+      if (sub) sub.textContent = (sub.textContent || "") + " · Street map (satellite blocked)";
+    }
+  }, 4000);
+
+  // Esri labels overlay
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-    { attribution: "", maxZoom: 21, opacity: 0.8, crossOrigin: true }
+    { attribution: "", maxZoom: 20, opacity: 0.7 }
   ).addTo(leafletMap);
 }
 
@@ -1679,7 +1849,7 @@ function rotateBed(id) {
 
 function renderMap() {
   loadBedsIfNeeded();
-  setTimeout(loadSavedMapLocation, 150);
+  if (mapTab === "satellite") setTimeout(loadSavedMapLocation, 150);
   const canvas = document.getElementById("map-canvas");
   const bedHarvestTotals = {};
   const bedPlants = {};
@@ -1689,8 +1859,52 @@ function renderMap() {
   // Scale: 1 ft = ~18px
   const SCALE = 18;
 
-  canvas.style.width  = Math.round(700 * mapZoom) + "px";
-  canvas.style.height = Math.round(600 * mapZoom) + "px";
+  // Draw lot boundary as background SVG
+  const LOT_SCALE = 18; // 1 ft = 18px
+  const lotPxW = Math.round(lotWidth * LOT_SCALE * mapZoom);
+  const lotPxH = Math.round(lotDepth * LOT_SCALE * mapZoom);
+  // Canvas must be large enough for lot + labels + padding
+  const canvasW = Math.max(400, lotWidth > 0 ? lotPxW + 80 : 700 * mapZoom);
+  const canvasH = Math.max(400, lotDepth > 0 ? lotPxH + 80 : 600 * mapZoom);
+  canvas.style.width  = Math.round(canvasW) + "px";
+  canvas.style.height = Math.round(canvasH) + "px";
+
+  // Lot boundary overlay
+  const lotOffX = 35, lotOffY = 30;
+  const lotSVG = lotWidth > 0 ? `
+    <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible" xmlns="http://www.w3.org/2000/svg">
+      <!-- Lot fill -->
+      <rect x="${lotOffX}" y="${lotOffY}" width="${lotPxW}" height="${lotPxH}"
+        fill="#e8f4e0" fill-opacity="0.4" stroke="#4a7a32" stroke-width="2" stroke-dasharray="8,4" rx="2"/>
+      <!-- Width label top -->
+      <text x="${lotOffX + lotPxW/2}" y="${lotOffY - 8}" text-anchor="middle"
+        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32" font-weight="bold">
+        ${lotWidth} ft
+      </text>
+      <!-- Width label bottom -->
+      <text x="${lotOffX + lotPxW/2}" y="${lotOffY + lotPxH + 16}" text-anchor="middle"
+        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32">
+        ${lotWidth} ft
+      </text>
+      <!-- Depth label left -->
+      <text x="${lotOffX - 10}" y="${lotOffY + lotPxH/2}" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32" font-weight="bold"
+        transform="rotate(-90, ${lotOffX - 10}, ${lotOffY + lotPxH/2})">
+        ${lotDepth} ft
+      </text>
+      <!-- Depth label right -->
+      <text x="${lotOffX + lotPxW + 12}" y="${lotOffY + lotPxH/2}" text-anchor="middle" dominant-baseline="middle"
+        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32"
+        transform="rotate(90, ${lotOffX + lotPxW + 12}, ${lotOffY + lotPxH/2})">
+        ${lotDepth} ft
+      </text>
+      <!-- Corner ticks -->
+      <line x1="${lotOffX-6}" y1="${lotOffY}" x2="${lotOffX+6}" y2="${lotOffY}" stroke="#4a7a32" stroke-width="1.5"/>
+      <line x1="${lotOffX}" y1="${lotOffY-6}" x2="${lotOffX}" y2="${lotOffY+6}" stroke="#4a7a32" stroke-width="1.5"/>
+      <line x1="${lotOffX+lotPxW-6}" y1="${lotOffY}" x2="${lotOffX+lotPxW+6}" y2="${lotOffY}" stroke="#4a7a32" stroke-width="1.5"/>
+      <line x1="${lotOffX+lotPxW}" y1="${lotOffY-6}" x2="${lotOffX+lotPxW}" y2="${lotOffY+6}" stroke="#4a7a32" stroke-width="1.5"/>
+    </svg>` : "";
+
   canvas.innerHTML = beds.map(b => {
     const pw = Math.max(60, b.w * SCALE), ph = Math.max(44, b.l * SCALE);
     const plants = (bedPlants[b.name]||[]).slice(0,5).map(p=>EMOJI[p.crop]||"🌱").join("");
@@ -1712,8 +1926,10 @@ function renderMap() {
       <div class="map-bed-label">${b.name}</div>
       <div class="map-bed-crops">${plants}</div>
       ${total?`<div class="map-bed-weight">${total}g</div>`:""}
+      ${selectedBedId===b.id?`<button onclick="event.stopPropagation();rotateBed('${b.id}')"
+        style="position:absolute;top:3px;right:3px;background:rgba(255,255,255,0.9);border:none;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer;color:#3a6a22;font-weight:bold">⟳</button>`:""}
     </div>`;
-  }).join("");
+  }).join("") + lotSVG;
 
   // Setup drag
   setupDrag(canvas);
@@ -1731,8 +1947,8 @@ function renderMap() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div class="bed-detail-title">${b.name}</div>
           <div style="display:flex;gap:8px">
-            <button onclick="rotateBed('${b.id}')" title="Rotate 90°" style="background:var(--bg3);border:none;border-radius:6px;padding:4px 10px;font-size:11px;color:var(--muted2);cursor:pointer;font-family:Georgia,serif">⟳ Rotate</button>
-            <button onclick="showBedSetup('${b.id}')" style="background:var(--bg3);border:none;border-radius:6px;padding:4px 10px;font-size:11px;color:var(--muted2);cursor:pointer;font-family:Georgia,serif">Edit</button>
+            <button onclick="rotateBed('${b.id}')" title="Rotate 90°" style="background:#e8f0df;border:1px solid #b0d090;border-radius:6px;padding:5px 12px;font-size:12px;color:#3a6a22;cursor:pointer;font-family:Georgia,serif;font-weight:bold">⟳ Rotate</button>
+            <button onclick="showBedSetup('${b.id}')" style="background:#f0ede4;border:1px solid var(--border2);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--muted2);cursor:pointer;font-family:Georgia,serif">Edit</button>
             <button onclick="deleteBed('${b.id}')" style="background:var(--bg3);border:none;border-radius:6px;padding:4px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:Georgia,serif">Delete</button>
           </div>
         </div>
@@ -2227,7 +2443,7 @@ function renderCare() {
 
 // ===================== SETUP WIZARD =====================
 let setupStep = 0;
-const SETUP_STEPS = 7;
+const SETUP_STEPS = 8;
 let setupData = { name:"", gardenName:"", address:"", lat:null, lon:null, zone:"", unit:"g" };
 
 function showSetupIfNeeded() {
@@ -2262,6 +2478,7 @@ function nextSetupStep() {
   if(setupStep===2) setupData.gardenName = document.getElementById("setup-garden-name").value.trim();
   if(setupStep===3) setupData.address = document.getElementById("setup-address").value.trim();
   if(setupStep===4) setupData.zone = document.getElementById("setup-zone").value;
+  if(setupStep===5) { setupData.lotW = parseFloat(document.getElementById("setup-lot-w").value)||0; setupData.lotD = parseFloat(document.getElementById("setup-lot-d").value)||0; }
   showSetupStep(Math.min(setupStep+1, SETUP_STEPS-1));
 }
 
@@ -2327,6 +2544,7 @@ function finishSetup() {
   localStorage.setItem("gl-demo-setup-zone", setupData.zone||"");
   if(setupData.address) localStorage.setItem("gl-demo-garden-address", setupData.address);
   if(setupData.lat) { localStorage.setItem("gl-demo-garden-lat", setupData.lat); localStorage.setItem("gl-demo-garden-lon", setupData.lon); }
+  if(setupData.lotW) { localStorage.setItem("gl-demo-lot-width", setupData.lotW); localStorage.setItem("gl-demo-lot-depth", setupData.lotD||setupData.lotW); }
   // Apply settings
   displayUnit = unit;
   // Update UI
