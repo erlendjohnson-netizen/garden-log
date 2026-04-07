@@ -1095,7 +1095,14 @@ async function loadData() {
     const p = localStorage.getItem("gl-plants");
     if (h) harvests = JSON.parse(h);
     if (c) careLog = JSON.parse(c);
-    if (p) plantLog = JSON.parse(p);
+    // Plant data version check — re-seed if outdated
+    var plantVersion = localStorage.getItem("gl-plant-version");
+    if (p && plantVersion === "v2") {
+      plantLog = JSON.parse(p);
+    } else {
+      seedPlants();
+      try { localStorage.setItem("gl-plant-version", "v2"); } catch(e){}
+    }
     if (!h) seedHarvests();
     if (!c) seedCare();
     if (!p) seedPlants();
@@ -1166,25 +1173,77 @@ function seedCare() {
 
 function seedPlants() {
   plantLog = [
-    {id:1,crop:"tomato",variety:"Sungold",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:2,crop:"tomato",variety:"Super Sweet 100",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:3,crop:"tomato",variety:"Lemon Boy",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:4,crop:"tomato",variety:"Early Girl",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:5,crop:"pepper",variety:"Shishito",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"harvesting",notes:"Overwintered"},
-    {id:6,crop:"pepper",variety:"Serrano",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"harvesting",notes:"Overwintered"},
-    {id:7,crop:"strawberry",variety:"Festival",bed:"Oval",count:25,seedDate:"",transplantDate:"2025-10-15",status:"harvesting",notes:"Oval bed"},
-    {id:8,crop:"strawberry",variety:"Festival",bed:"Square",count:20,seedDate:"",transplantDate:"2025-10-15",status:"harvesting",notes:"Square bed"},
-    {id:9,crop:"cucumber",variety:"Merlin",bed:"Tomato Bed",count:4,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
-    {id:10,crop:"cucumber",variety:"Beit Alpha",bed:"Tomato Bed",count:2,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:"First fruit April 1"},
-    {id:11,crop:"eggplant",variety:"Camo Camo",bed:"Tomato Bed",count:2,seedDate:"2026-01-20",transplantDate:"2026-02-25",status:"flowering",notes:""},
-    {id:12,crop:"dragon fruit",variety:"Palora",bed:"Container",count:1,seedDate:"",transplantDate:"2024-01-01",status:"flowering",notes:"Bloomed April 1 — self + red pollen applied"},
-    {id:13,crop:"dragon fruit",variety:"Haley's Comet",bed:"Container",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:14,crop:"dragon fruit",variety:"Pink Noid",bed:"Container",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:15,crop:"mango",variety:"Carrie",bed:"Container",count:1,seedDate:"",transplantDate:"2023-01-01",status:"flowering",notes:"31 panicles — hand pollination underway"},
-    {id:16,crop:"blackberry",variety:"Prime Ark Freedom",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:"~2 weeks from first ripe"},
-    {id:17,crop:"blueberry",variety:"Alapaha",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:""},
-    {id:18,crop:"blueberry",variety:"Ochlockonee",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:"Fresh transplant"},
-    {id:19,crop:"blueberry",variety:"Legacy",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:"Fresh transplant"},
+    // TOMATO BED 16x3
+    {id:"t1",crop:"tomato",variety:"Early Girl",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t2",crop:"tomato",variety:"Barry's Crazy Cherry",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t3",crop:"tomato",variety:"Red Snapper",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t4",crop:"tomato",variety:"Hossinator",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t5",crop:"tomato",variety:"Lemon Boy",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t6",crop:"tomato",variety:"Mushroom Basket",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t7",crop:"tomato",variety:"Sungold",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t8",crop:"tomato",variety:"Norfolk Purple",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t9",crop:"pepper",variety:"Jalapeño",bed:"Tomato Bed",count:1,seedDate:"",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t10",crop:"pepper",variety:"Banana Pepper",bed:"Tomato Bed",count:1,seedDate:"",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"t11",crop:"radish",variety:"French Breakfast",bed:"Tomato Bed",count:1,seedDate:"2026-01-20",transplantDate:"",status:"harvesting",notes:""},
+    {id:"t12",crop:"basil",variety:"Genovese",bed:"Tomato Bed",count:4,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"harvesting",notes:""},
+    // GREEN BED 8x3
+    {id:"g1",crop:"tomato",variety:"Super Sweet 100",bed:"Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"g2",crop:"tomato",variety:"Sungold",bed:"Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"g3",crop:"pepper",variety:"Fatali",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
+    {id:"g4",crop:"pepper",variety:"Scotch Bonnet",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
+    {id:"g5",crop:"pepper",variety:"Ahi Chincha",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
+    {id:"g6",crop:"pepper",variety:"Shishito",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"harvesting",notes:"Overwintered"},
+    {id:"g7",crop:"cucumber",variety:"Merlin",bed:"Green Bed",count:3,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
+    {id:"g8",crop:"cucumber",variety:"Beit Alpha",bed:"Green Bed",count:1,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
+    {id:"g9",crop:"radish",variety:"Watermelon",bed:"Green Bed",count:1,seedDate:"2026-01-20",transplantDate:"",status:"harvesting",notes:""},
+    // SQUARE GREEN BED 4x3
+    {id:"s1",crop:"tomato",variety:"Lemon Boy",bed:"Square Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"s2",crop:"tomato",variety:"Norfolk Purple",bed:"Square Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    {id:"s3",crop:"pepper",variety:"Habanero",bed:"Square Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
+    {id:"s4",crop:"pepper",variety:"Serrano",bed:"Square Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
+    {id:"s5",crop:"cucumber",variety:"Merlin",bed:"Square Green Bed",count:1,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
+    {id:"s6",crop:"cucumber",variety:"Beit Alpha",bed:"Square Green Bed",count:1,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
+    {id:"s7",crop:"basil",variety:"Holy Basil",bed:"Square Green Bed",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"harvesting",notes:""},
+    // OVAL STRAWBERRY BED 6x3
+    {id:"os1",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",count:25,seedDate:"",transplantDate:"2025-10-15",status:"harvesting",notes:""},
+    {id:"os2",crop:"onion",variety:"Green Onion",bed:"Oval Strawberry Bed",count:1,seedDate:"2026-02-01",transplantDate:"",status:"harvesting",notes:""},
+    // MINT PLANTER 2x2
+    {id:"mp1",crop:"mint",variety:"Mint",bed:"Mint Planter",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
+    {id:"mp2",crop:"tomato",variety:"Super Sweet 100",bed:"Mint Planter",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
+    // SQUARE STRAWBERRY 3x3
+    {id:"sq1",crop:"strawberry",variety:"Festival",bed:"Square Strawberry Bed",count:20,seedDate:"",transplantDate:"2025-10-15",status:"harvesting",notes:""},
+    // OVAL BLUEBERRY BED 6x3
+    {id:"bb1",crop:"blueberry",variety:"Alapaha",bed:"Oval Blueberry Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:""},
+    {id:"bb2",crop:"blueberry",variety:"Ochlockonee",bed:"Oval Blueberry Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:"Fresh transplant"},
+    {id:"bb3",crop:"blueberry",variety:"Legacy",bed:"Oval Blueberry Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:"Fresh transplant"},
+    // DRAGON FRUIT PLANTERS
+    {id:"df1",crop:"dragon fruit",variety:"Palora",bed:"Dragon Fruit Planter",count:1,seedDate:"",transplantDate:"2024-01-01",status:"flowering",notes:"Bloomed April 1"},
+    {id:"df2",crop:"dragon fruit",variety:"Haley's Comet",bed:"Dragon Fruit Planter",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
+    {id:"df3",crop:"dragon fruit",variety:"Pink Noid",bed:"New Planter",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:"Pink flesh"},
+    // MANGO PLANTER
+    {id:"mn1",crop:"mango",variety:"Carrie",bed:"Mango Planter",count:1,seedDate:"",transplantDate:"2023-01-01",status:"flowering",notes:"31 panicles"},
+    // TRIANGULAR IN GROUND 8x4
+    {id:"tri1",crop:"blackberry",variety:"Prime Ark Freedom",bed:"Triangular Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
+    {id:"tri2",crop:"fig",variety:"LSU Purple",bed:"Triangular Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
+    // HERB BED 1 6x3
+    {id:"h1",crop:"passionfruit",variety:"Passionfruit",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
+    {id:"h2",crop:"herb",variety:"Thyme",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
+    {id:"h3",crop:"herb",variety:"Sage",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
+    {id:"h4",crop:"herb",variety:"Oregano",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
+    {id:"h5",crop:"bean",variety:"Long Bean Red",bed:"Herb Bed",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"fruiting",notes:""},
+    {id:"h6",crop:"bean",variety:"Long Bean Green",bed:"Herb Bed",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"fruiting",notes:""},
+    {id:"h7",crop:"berry",variety:"Mora (Blackberry)",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
+    // HERB BED 2
+    {id:"h8",crop:"passionfruit",variety:"Passionfruit",bed:"Herb Bed 2",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
+    {id:"h9",crop:"bean",variety:"Long Bean",bed:"Herb Bed 2",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"fruiting",notes:""},
+    // IN GROUND TREES
+    {id:"ig1",crop:"fig",variety:"Celeste",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
+    {id:"ig2",crop:"citrus",variety:"Owari Satsuma",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
+    {id:"ig3",crop:"fig",variety:"LSU Tiger",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
+    {id:"ig4",crop:"peach",variety:"Florida King",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"flowering",notes:"Blooming April 2026"},
+    {id:"ig5",crop:"citrus",variety:"Cara Cara",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
+    {id:"ig6",crop:"citrus",variety:"Meyer Lemon",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
+    {id:"ig7",crop:"citrus",variety:"Persian Lime",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
   ];
   savePlants();
 }
@@ -1769,20 +1828,47 @@ let selectedBedColor = "#1e3a10";
 let dragState = null;
 
 function saveBeds() { try { localStorage.setItem("gl-beds", JSON.stringify(beds)); } catch(e){} }
-function loadBeds() {
-  try {
-    const b = localStorage.getItem("gl-beds");
-    if (b) { beds = JSON.parse(b); return; }
-  } catch(e){}
-  // Default beds seeded from your garden
+function seedBeds() {
   beds = [
-    {id:"oval", name:"Oval Stock Tank", w:4, l:4, shape:"oval", color:"#1e3a10", x:10, y:10, notes:"Strawberries + onions"},
-    {id:"square", name:"Square Raised Bed", w:4, l:4, shape:"rect", color:"#1a3a1a", x:140, y:10, notes:"Strawberries"},
-    {id:"tomato", name:"Tomato Bed", w:8, l:3, shape:"rect", color:"#3a1a1a", x:10, y:140, notes:"Tomatoes, cucumbers, eggplant"},
-    {id:"green", name:"Green Bed", w:6, l:3, shape:"rect", color:"#1a2a3a", x:10, y:250, notes:"Peppers, watermelon radish"},
-    {id:"container", name:"Containers", w:3, l:6, shape:"container", color:"#2a1a3a", x:200, y:130, notes:"Dragon fruit, mango, blueberries, potatoes"},
+    // ── MAIN GROWING BEDS (front section) ─────────────────────────
+    {id:"b01",name:"Tomato Bed",         w:16, l:3,  shape:"rect",    color:"#2d5016", x:2,  y:5,  notes:"16 varieties"},
+    {id:"b02",name:"Green Bed",          w:8,  l:3,  shape:"rect",    color:"#3a6b20", x:2,  y:12, notes:"Peppers, cukes, radish"},
+    {id:"b03",name:"Square Green Bed",   w:4,  l:3,  shape:"rect",    color:"#4a7a32", x:12, y:12, notes:"Mixed veg"},
+    // ── STRAWBERRY & BERRY BEDS ────────────────────────────────────
+    {id:"b04",name:"Oval Strawberry Bed",w:6,  l:3,  shape:"oval",    color:"#8b2020", x:18, y:5,  notes:"Festival + green onions"},
+    {id:"b05",name:"Square Strawberry",  w:3,  l:3,  shape:"rect",    color:"#8b2020", x:26, y:5,  notes:"Festival"},
+    {id:"b06",name:"Oval Blueberry Bed", w:6,  l:3,  shape:"oval",    color:"#1a3a6b", x:31, y:5,  notes:"3 varieties"},
+    // ── SMALL PLANTERS ─────────────────────────────────────────────
+    {id:"b07",name:"Mint Planter",       w:2,  l:2,  shape:"oval",    color:"#5a8a3a", x:18, y:12, notes:"Mint + Super Sweet 100"},
+    {id:"b08",name:"Dragon Fruit Planter",w:3, l:4,  shape:"rect",    color:"#6a1a8a", x:22, y:11, notes:"Palora, Haley's Comet"},
+    {id:"b09",name:"New Planter",        w:2,  l:3,  shape:"rect",    color:"#7a2a9a", x:27, y:11, notes:"Pink Noid dragon fruit"},
+    {id:"b10",name:"Mango Planter",      w:2,  l:3,  shape:"rect",    color:"#8a5a1a", x:31, y:11, notes:"Carrie mango"},
+    // ── HERB BEDS ──────────────────────────────────────────────────
+    {id:"b11",name:"Herb Bed",           w:6,  l:3,  shape:"rect",    color:"#5a6b20", x:2,  y:20, notes:"Passionfruit, herbs, beans, mora"},
+    {id:"b12",name:"Herb Bed 2",         w:4,  l:3,  shape:"rect",    color:"#6b7a2a", x:10, y:20, notes:"Passionfruit, long beans"},
+    // ── TRIANGULAR IN-GROUND BED ───────────────────────────────────
+    {id:"b13",name:"Triangular Bed",     w:8,  l:4,  shape:"rect",    color:"#1a5c3a", x:2,  y:28, notes:"Prime Ark Freedom, LSU Purple"},
+    // ── IN-GROUND FRUIT TREES ──────────────────────────────────────
+    {id:"b14",name:"Celeste Fig",        w:4,  l:4,  shape:"oval",    color:"#4a2d6b", x:38, y:5,  notes:"In ground"},
+    {id:"b15",name:"LSU Tiger Fig",      w:4,  l:4,  shape:"oval",    color:"#5a3d7b", x:44, y:5,  notes:"In ground"},
+    {id:"b16",name:"LSU Purple Fig",     w:4,  l:4,  shape:"oval",    color:"#3a1d5b", x:50, y:5,  notes:"In ground"},
+    {id:"b17",name:"Florida King Peach", w:5,  l:5,  shape:"oval",    color:"#c4622d", x:38, y:13, notes:"In ground — blooming Apr 2026"},
+    {id:"b18",name:"Owari Satsuma",      w:4,  l:4,  shape:"oval",    color:"#c47a2d", x:44, y:14, notes:"In ground"},
+    {id:"b19",name:"Cara Cara",          w:4,  l:4,  shape:"oval",    color:"#c4622d", x:50, y:14, notes:"In ground"},
+    {id:"b20",name:"Meyer Lemon",        w:4,  l:4,  shape:"oval",    color:"#b8a020", x:38, y:22, notes:"In ground"},
+    {id:"b21",name:"Persian Lime",       w:4,  l:4,  shape:"oval",    color:"#3a6b20", x:44, y:22, notes:"In ground"},
   ];
   saveBeds();
+}
+
+function loadBeds() {
+  try {
+    var b = localStorage.getItem("gl-beds");
+    var bv = localStorage.getItem("gl-bed-version");
+    if (b && bv === "v2") { beds = JSON.parse(b); return; }
+  } catch(e) {}
+  seedBeds();
+  try { localStorage.setItem("gl-bed-version", "v2"); } catch(e) {}
 }
 
 function rotateBedFromModal() {
