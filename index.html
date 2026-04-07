@@ -414,16 +414,8 @@
 <!-- ===== GARDEN MAP ===== -->
 <div class="view" id="view-map">
   <div class="header">
-    <div><div class="header-title">Garden Map</div><div class="header-sub" id="map-location-sub">Enter address for satellite view</div></div>
+    <div><div class="header-title">Garden Map</div><div class="header-sub">Drag beds · Tap to select · FIT to zoom out</div></div>
     <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="showBedSetup()">+ Add Bed</button>
-  </div>
-
-  <!-- ADDRESS SEARCH -->
-  <div style="padding:10px 14px 0;display:flex;gap:8px">
-    <input type="text" id="map-address-input" placeholder="236 Tullulah Ave, River Ridge, LA"
-      style="flex:1;background:#fff;border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;font-family:Georgia,serif;color:var(--text)"
-      onkeydown="if(event.key==='Enter')searchMapAddress()">
-    <button onclick="searchMapAddress()" class="btn btn-primary" style="padding:9px 14px;font-size:13px">Go</button>
   </div>
 
   <!-- MAP TABS -->
@@ -458,21 +450,58 @@
   </div>
 
   <!-- CANVAS/LAYOUT VIEW -->
-  <div id="map-canvas-view">
+  <div id="map-canvas-view" style="position:relative">
     <div class="map-wrap">
-      <div id="map-scroll-wrap" style="margin:0 14px;border-radius:12px;border:1px solid var(--border);overflow:hidden;position:relative">
-        <div id="map-zoom-controls" style="position:absolute;top:8px;right:8px;z-index:10;display:flex;flex-direction:column;gap:4px">
-          <button onclick="adjustZoom(0.2)" style="background:#ffffffee;border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-          <button onclick="adjustZoom(-0.2)" style="background:#ffffffee;border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-          <button onclick="fitCanvasToBeds()" style="background:#ffffffee;border:1px solid var(--border2);color:var(--muted);border-radius:6px;width:32px;height:28px;font-size:9px;cursor:pointer;letter-spacing:0.5px">FIT</button>
-        </div>
-        <div id="map-viewport" style="overflow:auto;height:420px;touch-action:pan-x pan-y">
+      <!-- Zoom controls: plain row above canvas, never clipped -->
+      <div style="display:flex;justify-content:flex-end;gap:6px;padding:6px 14px 4px">
+        <button onclick="fitCanvasToBeds()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--muted2);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:Georgia,serif;letter-spacing:0.5px">FIT</button>
+        <button onclick="adjustZoom(-0.25)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:20px;cursor:pointer">−</button>
+        <button onclick="adjustZoom(0.25)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--green);border-radius:6px;width:32px;height:32px;font-size:20px;cursor:pointer">+</button>
+      </div>
+      <!-- Canvas: fixed 300px height so page is always scrollable below -->
+      <div id="map-scroll-wrap" style="margin:0 14px;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+        <div id="map-viewport" style="overflow:auto;height:220px;touch-action:pan-x pan-y">
           <div id="map-canvas" style="background:#f0ede4;position:relative;height:600px;width:700px;touch-action:none"></div>
         </div>
       </div>
-      <div id="bed-detail-panel" style="margin:10px 14px 0"></div>
     </div>
   </div>
+
+
+</div><!-- end map-canvas-view -->
+
+<!-- SCROLL STRIP: touch-action auto means page scrolls when swiped here -->
+<div style="text-align:center;padding:10px 14px;touch-action:auto;cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:0.5px;user-select:none" onclick="">
+  ↕ Swipe here to scroll · tap a bed to edit/rotate/delete
+</div>
+
+<!-- BED ACTION BAR - outside canvas, no overflow issues -->
+<div id="bed-action-bar" style="display:none;background:#fff;border:2px solid #4a7a32;
+  border-radius:12px;margin:10px 14px 0;padding:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div id="bed-action-name" style="font-size:15px;font-weight:bold;color:#1a1a0e"></div>
+    <button id="bed-action-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#7a6e58;padding:0 4px;line-height:1">×</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button id="bed-btn-rotate"
+      style="flex:1;background:#4a7a32;color:#fff;border:none;border-radius:8px;
+             padding:13px 0;font-size:17px;cursor:pointer;font-family:Georgia,serif;font-weight:bold">
+      ⟳ Rotate
+    </button>
+    <button id="bed-btn-edit"
+      style="flex:1;background:#f0ede4;color:#1a1a0e;border:1px solid #c8c0b0;border-radius:8px;
+             padding:13px 0;font-size:15px;cursor:pointer;font-family:Georgia,serif">
+      Edit
+    </button>
+    <button id="bed-btn-delete"
+      style="flex:1;background:#fdeee8;color:#c4622d;border:1px solid #e8a080;border-radius:8px;
+             padding:13px 0;font-size:15px;cursor:pointer;font-family:Georgia,serif">
+      Delete
+    </button>
+  </div>
+  <div id="bed-action-stats" style="display:flex;gap:8px"></div>
+  <div id="bed-action-plants" style="margin-top:6px"></div>
+</div>
 
   <!-- BED TABLE -->
   <div class="section-title">Beds & Locations</div>
@@ -516,6 +545,16 @@
     <div class="btn-row" style="margin-top:4px">
       <button class="btn btn-secondary" onclick="closeBedModal()">Cancel</button>
       <button class="btn btn-primary" style="flex:2" onclick="saveBed()">Save Bed</button>
+    </div>
+    <div id="bed-modal-actions" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;gap:8px">
+      <button type="button" onclick="rotateBedFromModal()"
+        style="flex:1;background:#e8f0df;color:#3a6a22;border:1px solid #b0d090;border-radius:8px;padding:11px 0;font-size:14px;cursor:pointer;font-family:Georgia,serif;font-weight:bold">
+        ⟳ Rotate
+      </button>
+      <button type="button" onclick="deleteBedFromModal()"
+        style="flex:1;background:#fdeee8;color:#c4622d;border:1px solid #e8a080;border-radius:8px;padding:11px 0;font-size:14px;cursor:pointer;font-family:Georgia,serif">
+        🗑 Delete
+      </button>
     </div>
   </div>
 </div>
@@ -1158,7 +1197,7 @@ function showView(v, btn) {
   if (btn) btn.classList.add("active");
   if (v === "dashboard") renderDashboard();
   if (v === "log") renderLog();
-  if (v === "map") { renderMap(); }
+  if (v === "map") { renderMap(); setTimeout(fitCanvasToBeds, 350); }
   if (v === "add") { populateBedDropdowns(); }
   if (v === "calendar") renderCalendar();
   if (v === "care") renderCare();
@@ -1629,51 +1668,21 @@ function setMapTab(t) {
 }
 
 function fitCanvasToBeds() {
-  const SCALE = 18;
-  const padding = 24;
-  let minX = 0, minY = 0, maxX = 0, maxY = 0;
-  // Include lot boundary in fit calculation
-  if (lotWidth > 0) {
-    maxX = Math.max(maxX, lotWidth * SCALE + 80);
-    maxY = Math.max(maxY, lotDepth * SCALE + 80);
-  }
-  if (!beds.length && lotWidth === 0) return;
-  beds.forEach(b => {
-    const pw = Math.max(60, b.w * SCALE);
-    const ph = Math.max(44, b.l * SCALE);
-    maxX = Math.max(maxX, b.x + pw + 20);
-    maxY = Math.max(maxY, b.y + ph + 20);
-  });
-  const viewport = document.getElementById("map-viewport");
-  const canvas = document.getElementById("map-canvas");
-  if (!viewport || !canvas) return;
-  const vw = viewport.clientWidth - padding * 2;
-  const vh = viewport.clientHeight - padding * 2;
-  const contentW = maxX - minX;
-  const contentH = maxY - minY;
-  if (contentW <= 0 || contentH <= 0) return;
-  // Calculate zoom to fit all beds
-  mapZoom = Math.max(0.3, Math.min(1.5, Math.min(vw / contentW, vh / contentH)));
-  // Apply zoom to canvas size
-  canvas.style.width = Math.round(700 * mapZoom) + "px";
-  canvas.style.height = Math.round(600 * mapZoom) + "px";
-  // Move all bed elements to zoomed positions without re-rendering
-  beds.forEach(b => {
-    const el = document.getElementById("mapbed-" + b.id);
-    if (!el) return;
-    const pw = Math.max(60, b.w * SCALE);
-    const ph = Math.max(44, b.l * SCALE);
-    el.style.left = Math.round(b.x * mapZoom) + "px";
-    el.style.top  = Math.round(b.y * mapZoom) + "px";
-    el.style.width  = Math.round(pw * mapZoom) + "px";
-    el.style.height = Math.round(ph * mapZoom) + "px";
-    el.style.fontSize = Math.round(9 * mapZoom) + "px";
-  });
-  // Scroll to show beds centered
-  setTimeout(() => {
-    viewport.scrollLeft = Math.max(0, Math.round(minX * mapZoom) - padding);
-    viewport.scrollTop  = Math.max(0, Math.round(minY * mapZoom) - padding);
-  }, 30);
+  var FT=18, MARGIN=80;
+  var viewport=document.getElementById("map-viewport");
+  var canvas=document.getElementById("map-canvas");
+  if(!viewport||!canvas) return;
+  // Full lot dimensions at zoom=1
+  var logW=(lotWidth>0?lotWidth*FT:600)+MARGIN*2;
+  var logH=(lotDepth>0?lotDepth*FT:400)+MARGIN*2;
+  // Viewport size
+  var vw=viewport.clientWidth||300;
+  var vh=viewport.clientHeight||420;
+  // Fit zoom so entire lot fits
+  var newZoom = Math.min(vw/logW, vh/logH) * 0.92;
+  mapZoom = Math.max(0.1, Math.min(3.0, newZoom));
+  renderMap();
+  setTimeout(function(){viewport.scrollLeft=0;viewport.scrollTop=0;},60);
 }
 
 function initLeafletMap(lat, lon, zoom) {
@@ -1776,10 +1785,32 @@ function loadBeds() {
   saveBeds();
 }
 
+function rotateBedFromModal() {
+  var id = document.getElementById("bed-edit-id") ? document.getElementById("bed-edit-id").value : null;
+  if (!id) return;
+  window.rotBed(id);
+  closeBedModal();
+}
+
+function deleteBedFromModal() {
+  var id = document.getElementById("bed-edit-id") ? document.getElementById("bed-edit-id").value : null;
+  if (!id) return;
+  if (confirm("Delete this bed?")) {
+    beds = beds.filter(function(b){ return b.id !== id; });
+    saveBeds();
+    selectedBedId = null;
+    closeBedModal();
+    renderMap();
+    toast("Bed deleted");
+  }
+}
+
 function showBedSetup(editId) {
   document.getElementById("bed-modal").classList.add("open");
   document.getElementById("bed-modal-title").textContent = editId ? "Edit Bed" : "Add Bed";
   document.getElementById("bed-edit-id").value = editId||"";
+  var actRow = document.getElementById("bed-modal-actions");
+  if (actRow) actRow.style.display = editId ? "flex" : "none";
   if (editId) {
     const b = beds.find(b=>b.id===editId);
     if (!b) return;
@@ -1839,176 +1870,180 @@ function deleteBed(id) {
   saveBeds(); renderMap();
 }
 
-function rotateBed(id) {
-  beds = beds.map(b => {
-    if (b.id !== id) return b;
-    return { ...b, w: b.l, l: b.w };
-  });
-  saveBeds(); renderMap(); toast("⟳ Bed rotated");
+var rotTouchTarget = null;
+// Global rotate function - called directly, no delegation needed
+window.rotBed = function(id) {
+  var idx = beds.findIndex(function(b){ return b.id === id; });
+  if (idx < 0) { toast("Bed not found"); return; }
+  var b = beds[idx];
+  var newW = b.l, newL = b.w;
+  beds[idx] = { id:b.id, name:b.name, w:newW, l:newL, shape:b.shape,
+    color:b.color, x:b.x, y:b.y, notes:b.notes };
+  saveBeds();
+  renderMap();
+  setTimeout(fitCanvasToBeds, 80);
+  toast("Rotated");
+};
+
+function doRotateBed(bedId) {
+  var idx = beds.findIndex(function(b){return b.id===bedId;});
+  if (idx < 0) return;
+  var b = beds[idx];
+  beds[idx] = Object.assign({}, b, {w: b.l, l: b.w});
+  saveBeds();
+  renderMap();
+  setTimeout(fitCanvasToBeds, 80);
+  toast("Rotated");
 }
 
 function renderMap() {
   loadBedsIfNeeded();
-  if (mapTab === "satellite") setTimeout(loadSavedMapLocation, 150);
-  const canvas = document.getElementById("map-canvas");
-  const bedHarvestTotals = {};
-  const bedPlants = {};
+  const FT = 18, MARGIN = 80;
+  const bedHarvestTotals = {}, bedPlants = {};
   harvests.forEach(e => { bedHarvestTotals[e.bed]=(bedHarvestTotals[e.bed]||0)+e.weight; });
   plantLog.forEach(p => { if(!bedPlants[p.bed])bedPlants[p.bed]=[]; bedPlants[p.bed].push(p); });
+  const canvas = document.getElementById("map-canvas");
+  if (!canvas) return;
+  const lotW_px = lotWidth>0 ? Math.round(lotWidth*FT) : 600;
+  const lotH_px = lotDepth>0 ? Math.round(lotDepth*FT) : 400;
+  const totalW = (lotW_px + MARGIN*2) * mapZoom;
+  const totalH = (lotH_px + MARGIN*2) * mapZoom;
+  canvas.style.width  = Math.round(totalW) + "px";
+  canvas.style.height = Math.round(totalH) + "px";
 
-  // Scale: 1 ft = ~18px
-  const SCALE = 18;
+  const bedHTML = beds.map(function(b) {
+    var pw = Math.max(50, b.w*FT), ph = Math.max(36, b.l*FT);
+    var zx = Math.round((b.x+MARGIN)*mapZoom), zy = Math.round((b.y+MARGIN)*mapZoom);
+    var zpw = Math.round(pw*mapZoom), zph = Math.round(ph*mapZoom);
+    var zfs = Math.max(8, Math.round(9*mapZoom));
+    var plants = (bedPlants[b.name]||[]).slice(0,5).map(function(p){return EMOJI[p.crop]||"";}).join("");
+    var total = bedHarvestTotals[b.name]||0;
+    var isOval = b.shape==="oval"||b.shape==="container";
+    var br = isOval ? "50%" : (b.shape==="container" ? "10px" : "6px");
+    var isSel = selectedBedId===b.id;
+    var selStyle = isSel ? "border:3px solid #4a7a32;box-shadow:0 0 0 2px #4a7a3244;" : "";
+    var rotBtn = '';
+    var weightDiv = total ? '<div class="map-bed-weight">'+fmt(total)+'</div>' : "";
+    var div = '<div class="map-bed '+(isSel?"selected":"")+'" id="mapbed-'+b.id+'" data-id="'+b.id+'"';
+    div += ' style="left:'+zx+'px;top:'+zy+'px;width:'+zpw+'px;height:'+zph+'px;';
+    div += 'background:'+b.color+';border-radius:'+br+';font-size:'+zfs+'px;'+selStyle+'"';
+    div += ' ontouchstart="startDrag(event,\''+b.id+'\')"';
+    div += ' onmousedown="startDrag(event,\''+b.id+'\')"';
+    div += ' onclick="selectMapBed(\''+b.id+'\')">';
+    div += '<div class="map-bed-label">'+b.name+'</div>';
+    div += '<div class="map-bed-crops">'+plants+'</div>';
+    div += weightDiv + rotBtn + '</div>';
+    return div;
+  }).join("");
 
-  // Draw lot boundary as background SVG
-  const LOT_SCALE = 18; // 1 ft = 18px
-  const lotPxW = Math.round(lotWidth * LOT_SCALE * mapZoom);
-  const lotPxH = Math.round(lotDepth * LOT_SCALE * mapZoom);
-  // Canvas must be large enough for lot + labels + padding
-  const canvasW = Math.max(400, lotWidth > 0 ? lotPxW + 80 : 700 * mapZoom);
-  const canvasH = Math.max(400, lotDepth > 0 ? lotPxH + 80 : 600 * mapZoom);
-  canvas.style.width  = Math.round(canvasW) + "px";
-  canvas.style.height = Math.round(canvasH) + "px";
-
-  // Lot boundary overlay
-  const lotOffX = 35, lotOffY = 30;
-  const lotSVG = lotWidth > 0 ? `
-    <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible" xmlns="http://www.w3.org/2000/svg">
-      <!-- Lot fill -->
-      <rect x="${lotOffX}" y="${lotOffY}" width="${lotPxW}" height="${lotPxH}"
-        fill="#e8f4e0" fill-opacity="0.4" stroke="#4a7a32" stroke-width="2" stroke-dasharray="8,4" rx="2"/>
-      <!-- Width label top -->
-      <text x="${lotOffX + lotPxW/2}" y="${lotOffY - 8}" text-anchor="middle"
-        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32" font-weight="bold">
-        ${lotWidth} ft
-      </text>
-      <!-- Width label bottom -->
-      <text x="${lotOffX + lotPxW/2}" y="${lotOffY + lotPxH + 16}" text-anchor="middle"
-        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32">
-        ${lotWidth} ft
-      </text>
-      <!-- Depth label left -->
-      <text x="${lotOffX - 10}" y="${lotOffY + lotPxH/2}" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32" font-weight="bold"
-        transform="rotate(-90, ${lotOffX - 10}, ${lotOffY + lotPxH/2})">
-        ${lotDepth} ft
-      </text>
-      <!-- Depth label right -->
-      <text x="${lotOffX + lotPxW + 12}" y="${lotOffY + lotPxH/2}" text-anchor="middle" dominant-baseline="middle"
-        font-family="Georgia,serif" font-size="${Math.round(11*mapZoom)}" fill="#4a7a32"
-        transform="rotate(90, ${lotOffX + lotPxW + 12}, ${lotOffY + lotPxH/2})">
-        ${lotDepth} ft
-      </text>
-      <!-- Corner ticks -->
-      <line x1="${lotOffX-6}" y1="${lotOffY}" x2="${lotOffX+6}" y2="${lotOffY}" stroke="#4a7a32" stroke-width="1.5"/>
-      <line x1="${lotOffX}" y1="${lotOffY-6}" x2="${lotOffX}" y2="${lotOffY+6}" stroke="#4a7a32" stroke-width="1.5"/>
-      <line x1="${lotOffX+lotPxW-6}" y1="${lotOffY}" x2="${lotOffX+lotPxW+6}" y2="${lotOffY}" stroke="#4a7a32" stroke-width="1.5"/>
-      <line x1="${lotOffX+lotPxW}" y1="${lotOffY-6}" x2="${lotOffX+lotPxW}" y2="${lotOffY+6}" stroke="#4a7a32" stroke-width="1.5"/>
-    </svg>` : "";
-
-  canvas.innerHTML = beds.map(b => {
-    const pw = Math.max(60, b.w * SCALE), ph = Math.max(44, b.l * SCALE);
-    const plants = (bedPlants[b.name]||[]).slice(0,5).map(p=>EMOJI[p.crop]||"🌱").join("");
-    const total = bedHarvestTotals[b.name]||0;
-    const isOval = b.shape==="oval"||b.shape==="container";
-    const br = isOval ? "50%" : b.shape==="container"?"10px":"6px";
-    const zx = Math.round(b.x * mapZoom);
-    const zy = Math.round(b.y * mapZoom);
-    const zpw = Math.round(pw * mapZoom);
-    const zph = Math.round(ph * mapZoom);
-    const zfs = Math.round(9 * mapZoom);
-    return `<div class="map-bed ${selectedBedId===b.id?'selected':''}"
-      id="mapbed-${b.id}"
-      data-id="${b.id}"
-      style="left:${zx}px;top:${zy}px;width:${zpw}px;height:${zph}px;background:${b.color};border-radius:${br};font-size:${zfs}px"
-      ontouchstart="startDrag(event,'${b.id}')"
-      onmousedown="startDrag(event,'${b.id}')"
-      onclick="selectMapBed('${b.id}')">
-      <div class="map-bed-label">${b.name}</div>
-      <div class="map-bed-crops">${plants}</div>
-      ${total?`<div class="map-bed-weight">${total}g</div>`:""}
-      ${selectedBedId===b.id?`<button onclick="event.stopPropagation();rotateBed('${b.id}')"
-        style="position:absolute;top:3px;right:3px;background:rgba(255,255,255,0.9);border:none;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer;color:#3a6a22;font-weight:bold">⟳</button>`:""}
-    </div>`;
-  }).join("") + lotSVG;
-
-  // Setup drag
-  setupDrag(canvas);
-
-  // Bed detail panel
-  const detail = document.getElementById("bed-detail-panel");
-  if (selectedBedId) {
-    const b = beds.find(b=>b.id===selectedBedId);
-    if (!b) { detail.innerHTML=""; }
-    else {
-      const plants = bedPlants[b.name]||[];
-      const totalW = bedHarvestTotals[b.name]||0;
-      const totalC = harvests.filter(e=>e.bed===b.name).reduce((s,e)=>s+e.count,0);
-      detail.innerHTML = `<div class="bed-detail">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div class="bed-detail-title">${b.name}</div>
-          <div style="display:flex;gap:8px">
-            <button onclick="rotateBed('${b.id}')" title="Rotate 90°" style="background:#e8f0df;border:1px solid #b0d090;border-radius:6px;padding:5px 12px;font-size:12px;color:#3a6a22;cursor:pointer;font-family:Georgia,serif;font-weight:bold">⟳ Rotate</button>
-            <button onclick="showBedSetup('${b.id}')" style="background:#f0ede4;border:1px solid var(--border2);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--muted2);cursor:pointer;font-family:Georgia,serif">Edit</button>
-            <button onclick="deleteBed('${b.id}')" style="background:var(--bg3);border:none;border-radius:6px;padding:4px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:Georgia,serif">Delete</button>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${b.w} × ${b.l} ft${b.notes?" · "+b.notes:""}</div>
-        <div class="bed-stat-row">
-          <div class="bed-stat"><div class="bed-stat-val">${totalW}g</div><div class="bed-stat-lbl">Harvested</div></div>
-          <div class="bed-stat"><div class="bed-stat-val">${totalC}</div><div class="bed-stat-lbl">Items</div></div>
-          <div class="bed-stat"><div class="bed-stat-val">${plants.length}</div><div class="bed-stat-lbl">Crops</div></div>
-        </div>
-        ${plants.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
-          <div><span style="font-size:13px">${EMOJI[p.crop]||"🌱"} ${p.variety}</span><div style="font-size:10px;color:var(--muted)">${p.status} · ${p.count} plant${p.count!==1?"s":""}</div></div>
-          <span class="plant-status" style="background:${statusColor(p.status)}22;color:${statusColor(p.status)}">${p.status}</span>
-        </div>`).join("")}
-      </div>`;
-    }
-  } else detail.innerHTML="";
-
-  // Bed table
-  const bt = document.getElementById("bed-table");
-  if (!beds.length) { bt.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">No beds yet — tap "+ Add Bed" to start</div>'; }
-  else {
-    bt.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
-      <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">
-        <th style="text-align:left;padding:6px 0;border-bottom:1px solid var(--border)">Bed</th>
-        <th style="text-align:center;padding:6px 4px;border-bottom:1px solid var(--border)">Size</th>
-        <th style="text-align:left;padding:6px 4px;border-bottom:1px solid var(--border)">Current crops</th>
-        <th style="border-bottom:1px solid var(--border)"></th>
-      </tr>
-      ${beds.map(b=>{
-        const crops = (bedPlants[b.name]||[]).map(p=>EMOJI[p.crop]).join(" ")||"—";
-        return `<tr class="bed-table-row" style="display:table-row">
-          <td style="padding:8px 0">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div class="bed-table-swatch" style="background:${b.color}"></div>
-              <span>${b.name}</span>
-            </div>
-          </td>
-          <td style="text-align:center;padding:8px 4px;color:var(--muted)">${b.w}×${b.l}ft</td>
-          <td style="padding:8px 4px">${crops}</td>
-          <td style="padding:8px 0;text-align:right">
-            <button onclick="showBedSetup('${b.id}')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;font-family:Georgia,serif">Edit</button>
-          </td>
-        </tr>`;
-      }).join("")}
-    </table></div>`;
+  var lotSVG = "";
+  if (lotWidth > 0) {
+    var lx = Math.round(MARGIN*mapZoom), ly = Math.round(MARGIN*mapZoom);
+    var lw = Math.round(lotW_px*mapZoom), lh = Math.round(lotH_px*mapZoom);
+    var fs = Math.max(9, Math.round(11*mapZoom));
+    var ds = Math.round(8*mapZoom)+","+Math.round(4*mapZoom);
+    var sw = Math.max(1.5, 2*mapZoom);
+    lotSVG = '<svg style="position:absolute;top:0;left:0;width:'+Math.round(totalW)+'px;height:'+Math.round(totalH)+'px;pointer-events:none;overflow:visible">';
+    lotSVG += '<rect x="'+lx+'" y="'+ly+'" width="'+lw+'" height="'+lh+'" fill="#e8f4e0" fill-opacity="0.4" stroke="#4a7a32" stroke-width="'+sw+'" stroke-dasharray="'+ds+'" rx="2"/>';
+    lotSVG += '<text x="'+(lx+lw/2)+'" y="'+(ly-12)+'" text-anchor="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32" font-weight="bold">'+lotWidth+' ft</text>';
+    lotSVG += '<text x="'+(lx+lw/2)+'" y="'+(ly+lh+20)+'" text-anchor="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32">'+lotWidth+' ft</text>';
+    lotSVG += '<text transform="rotate(-90,'+(lx-18)+','+(ly+lh/2)+')" x="'+(lx-18)+'" y="'+(ly+lh/2)+'" text-anchor="middle" dominant-baseline="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32" font-weight="bold">'+lotDepth+' ft</text>';
+    lotSVG += '<text transform="rotate(90,'+(lx+lw+18)+','+(ly+lh/2)+')" x="'+(lx+lw+18)+'" y="'+(ly+lh/2)+'" text-anchor="middle" dominant-baseline="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32">'+lotDepth+' ft</text>';
+    lotSVG += '</svg>';
   }
 
-  // Plant log
-  const pl = document.getElementById("plant-log-list");
-  if (!plantLog.length) { pl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0 20px">No plants logged yet</div>'; return; }
-  pl.innerHTML = plantLog.map(p=>`<div class="plant-row">
-    <div class="plant-dot" style="background:${COLORS[p.crop]||'#8fba6a'}"></div>
-    <div style="flex:1">
-      <div class="plant-name">${EMOJI[p.crop]||"🌱"} ${p.variety} <span style="font-size:11px;color:var(--muted)">${p.bed}</span></div>
-      <div class="plant-sub">${p.count} plant${p.count!==1?"s":""}${p.seedDate?" · Seed: "+p.seedDate:""}${p.transplantDate?" · Transplant: "+p.transplantDate:""}</div>
-      ${p.notes?`<div style="font-size:11px;color:var(--muted2);font-style:italic">${p.notes}</div>`:""}
-    </div>
-    <span class="plant-status" style="background:${statusColor(p.status)}22;color:${statusColor(p.status)};font-size:10px">${p.status}</span>
-  </div>`).join("");
+  canvas.innerHTML = bedHTML + lotSVG;
+  setupDrag(canvas);
+
+  // Update action bar
+  var actionBar = document.getElementById("bed-action-bar");
+  if (actionBar) {
+    if (selectedBedId) {
+      var b = beds.find(function(b){return b.id===selectedBedId;});
+      if (b) {
+        actionBar.style.display = "block";
+        document.getElementById("bed-action-name").textContent = b.name + " (" + b.w + "×" + b.l + " ft)";
+        // Wire buttons
+        document.getElementById("bed-btn-rotate").onclick = function() { window.rotBed(b.id); };
+        document.getElementById("bed-btn-edit").onclick = function() { showBedSetup(b.id); };
+        document.getElementById("bed-btn-delete").onclick = function() { deleteBed(b.id); };
+        document.getElementById("bed-action-close").onclick = function() {
+          selectedBedId = null; renderMap();
+        };
+        var bPlants = bedPlants[b.name]||[];
+        var tW = bedHarvestTotals[b.name]||0;
+        var tC = harvests.filter(function(e){return e.bed===b.name;}).reduce(function(s,e){return s+e.count;},0);
+        var html = '';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+        html += '<div style="font-size:15px;font-weight:bold">'+b.name+' <span style="font-size:11px;color:var(--muted);font-weight:normal">'+b.w+'x'+b.l+' ft</span></div>';
+        html += '<div style="display:flex;gap:6px">';
+        html += '<div data-rotid="' + b.id + '" style="background:#4a7a32;color:#fff;border-radius:8px;padding:10px 18px;font-size:15px;cursor:pointer;font-family:Georgia,serif;font-weight:bold;display:inline-block;user-select:none">&#x27F3; Rotate</div>';
+        html += '<button onclick="deleteBed(\''+b.id+'\')" style="background:#fdeee8;border:1px solid #e8a080;border-radius:6px;padding:8px 10px;font-size:13px;color:var(--red);cursor:pointer;font-family:Georgia,serif">X</button>';
+        html += '</div></div>';
+        html += '<div class="bed-stat-row">';
+        html += '<div class="bed-stat"><div class="bed-stat-val">'+fmt(tW)+'</div><div class="bed-stat-lbl">Harvested</div></div>';
+        html += '<div class="bed-stat"><div class="bed-stat-val">'+tC+'</div><div class="bed-stat-lbl">Items</div></div>';
+        html += '<div class="bed-stat"><div class="bed-stat-val">'+bPlants.length+'</div><div class="bed-stat-lbl">Crops</div></div>';
+        html += '</div>';
+        bPlants.forEach(function(p){
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">';
+          html += '<div><span>'+(EMOJI[p.crop]||"")+" "+p.variety+'</span><div style="font-size:10px;color:var(--muted)">'+p.status+'</div></div>';
+          html += '<span style="background:'+statusColor(p.status)+'22;color:'+statusColor(p.status)+';border-radius:10px;padding:2px 7px;font-size:10px">'+p.status+'</span></div>';
+        });
+        html += '</div>';
+        // Show stats and plants in action bar
+        var statsEl = document.getElementById("bed-action-stats");
+        var plantsEl = document.getElementById("bed-action-plants");
+        if (statsEl) statsEl.innerHTML =
+          '<div class="bed-stat"><div class="bed-stat-val">' + fmt(tW) + '</div><div class="bed-stat-lbl">Harvested</div></div>' +
+          '<div class="bed-stat"><div class="bed-stat-val">' + tC + '</div><div class="bed-stat-lbl">Items</div></div>' +
+          '<div class="bed-stat"><div class="bed-stat-val">' + bPlants.length + '</div><div class="bed-stat-lbl">Crops</div></div>';
+        if (plantsEl) plantsEl.innerHTML = bPlants.map(function(p) {
+          return '<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">' +
+            '<span>' + (EMOJI[p.crop]||'') + ' ' + p.variety + '</span>' +
+            '<span style="color:var(--muted)">' + p.status + '</span></div>';
+        }).join('');
+      } else { actionBar.style.display = "none"; }
+    } else { actionBar.style.display = "none"; }
+  }
+
+  var bt = document.getElementById("bed-table");
+  if (bt) {
+    if (!beds.length) {
+      bt.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0">No beds yet — tap "+ Add Bed" to start</div>';
+    } else {
+      var tbl = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+      tbl += '<tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">';
+      tbl += '<th style="text-align:left;padding:6px 0;border-bottom:1px solid var(--border)">Bed</th>';
+      tbl += '<th style="padding:6px;border-bottom:1px solid var(--border)">Size</th>';
+      tbl += '<th style="text-align:left;padding:6px;border-bottom:1px solid var(--border)">Crops</th>';
+      tbl += '<th style="border-bottom:1px solid var(--border)"></th></tr>';
+      beds.forEach(function(b) {
+        var crops = (bedPlants[b.name]||[]).map(function(p){return EMOJI[p.crop]||"";}).join(" ")||"—";
+        tbl += '<tr><td style="padding:8px 0"><div style="display:flex;align-items:center;gap:8px">';
+        tbl += '<div style="width:10px;height:10px;border-radius:3px;background:'+b.color+'"></div>'+b.name+'</div></td>';
+        tbl += '<td style="text-align:center;padding:8px 4px;color:var(--muted)">'+b.w+'x'+b.l+'ft</td>';
+        tbl += '<td style="padding:8px 4px">'+crops+'</td>';
+        tbl += '<td style="text-align:right"><button onclick="showBedSetup(\''+b.id+'\')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;font-family:Georgia,serif">Edit</button></td></tr>';
+      });
+      tbl += '</table></div>';
+      bt.innerHTML = tbl;
+    }
+  }
+
+  var pl = document.getElementById("plant-log-list");
+  if (pl) {
+    if (!plantLog.length) { pl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0 20px">No plants logged yet</div>'; return; }
+    var phtml = plantLog.map(function(p) {
+      return '<div class="plant-row"><div class="plant-dot" style="background:'+(COLORS[p.crop]||'#8fba6a')+'"></div><div style="flex:1"><div class="plant-name">'+(EMOJI[p.crop]||"")+" "+p.variety+' <span style="font-size:11px;color:var(--muted)">'+p.bed+'</span></div><div class="plant-sub">'+p.count+' plant'+(p.count!==1?'s':'')+(p.seedDate?' · '+p.seedDate:'')+(p.transplantDate?' · '+p.transplantDate:'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--muted2);font-style:italic">'+p.notes+'</div>':'')+'</div><span class="plant-status" style="background:'+statusColor(p.status)+'22;color:'+statusColor(p.status)+';font-size:10px">'+p.status+'</span></div>';
+    }).join("");
+    pl.innerHTML = phtml;
+  }
 }
+
+
+
+
 
 function selectMapBed(id) {
   if (dragState && dragState.moved) return;
@@ -2030,51 +2065,134 @@ function loadBedsIfNeeded() {
 
 // ── DRAG & DROP ──
 function setupDrag(canvas) {
-  const onMove = (e) => {
-    if (!dragState) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const rect = canvas.getBoundingClientRect();
-    // All math in logical (unzoomed) coordinates
-    const logicalX = (pt.clientX - rect.left) / mapZoom;
-    const logicalY = (pt.clientY - rect.top)  / mapZoom;
-    const SCALE = 18;
-    const bed = beds.find(b => b.id === dragState.id);
-    const pw = Math.max(60, bed.w * SCALE);
-    const ph = Math.max(44, bed.l * SCALE);
-    const nx = Math.max(0, Math.min(700 - pw, logicalX - dragState.ox));
-    const ny = Math.max(0, Math.min(600 - ph, logicalY - dragState.oy));
-    // Update logical position in beds array immediately for smooth drag
-    beds = beds.map(b => b.id === dragState.id ? {...b, x: nx, y: ny} : b);
-    // Move the element visually
-    dragState.el.style.left = Math.round(nx * mapZoom) + "px";
-    dragState.el.style.top  = Math.round(ny * mapZoom) + "px";
-    if (Math.abs(nx - dragState.startX) > 3 || Math.abs(ny - dragState.startY) > 3) dragState.moved = true;
-  };
-  const onEnd = () => {
-    if (!dragState) return;
-    if (dragState.moved) {
-      saveBeds();
+  var panState = null; // for viewport panning
+
+  var onStart = function(e) {
+    var pt = e.touches ? e.touches[0] : e;
+    // Check if touch is on a bed element
+    var target = e.target;
+    var bedEl = null;
+    var el = target;
+    while (el && el !== canvas) {
+      if (el.dataset && el.dataset.id) { bedEl = el; break; }
+      el = el.parentElement;
     }
-    dragState = null;
+
+    if (bedEl) {
+      // Start bed drag
+      startDrag(e, bedEl.dataset.id);
+    } else {
+      // Start viewport pan
+      var viewport = document.getElementById("map-viewport");
+      if (!viewport) return;
+      panState = {
+        startX: pt.clientX,
+        startY: pt.clientY,
+        scrollLeft: viewport.scrollLeft,
+        scrollTop: viewport.scrollTop
+      };
+    }
   };
-  canvas.addEventListener("mousemove", onMove);
-  canvas.addEventListener("touchmove", onMove, {passive:false});
-  window.addEventListener("mouseup", onEnd);
-  window.addEventListener("touchend", onEnd);
+
+  var onMove = function(e) {
+    if (dragState) {
+      // Bed drag logic
+      e.preventDefault();
+      var pt = e.touches ? e.touches[0] : e;
+      var rect = canvas.getBoundingClientRect();
+      var MARGIN = 80, FT = 18;
+      var logicalX = (pt.clientX - rect.left) / mapZoom - MARGIN;
+      var logicalY = (pt.clientY - rect.top) / mapZoom - MARGIN;
+      var bed = beds.find(function(b){return b.id===dragState.id;});
+      if (!bed) return;
+      var pw = Math.max(50, bed.w*FT), ph = Math.max(36, bed.l*FT);
+      var maxX = (lotWidth>0?lotWidth*FT:600) - pw;
+      var maxY = (lotDepth>0?lotDepth*FT:400) - ph;
+      var nx = Math.max(0, Math.min(maxX, logicalX - dragState.ox));
+      var ny = Math.max(0, Math.min(maxY, logicalY - dragState.oy));
+      beds = beds.map(function(b){return b.id===dragState.id ? Object.assign({},b,{x:nx,y:ny}) : b;});
+      dragState.el.style.left = Math.round((nx+MARGIN)*mapZoom)+"px";
+      dragState.el.style.top  = Math.round((ny+MARGIN)*mapZoom)+"px";
+      if (Math.abs(nx-dragState.startX)>2||Math.abs(ny-dragState.startY)>2) dragState.moved=true;
+    } else if (panState) {
+      // Viewport pan
+      e.preventDefault();
+      var pt2 = e.touches ? e.touches[0] : e;
+      var viewport = document.getElementById("map-viewport");
+      if (!viewport) return;
+      var dx = panState.startX - pt2.clientX;
+      var dy = panState.startY - pt2.clientY;
+      viewport.scrollLeft = panState.scrollLeft + dx;
+      viewport.scrollTop  = panState.scrollTop  + dy;
+    }
+  };
+
+  var onEnd = function(e) {
+    if (dragState) {
+      if (!dragState.moved) selectMapBed(dragState.id);
+      else saveBeds();
+      dragState = null;
+    }
+    panState = null;
+  };
+
+  canvas.addEventListener("touchstart", onStart, {passive: true});
+  canvas.addEventListener("mousedown",  onStart);
+  canvas.addEventListener("touchmove",  onMove, {passive: false});
+  canvas.addEventListener("mousemove",  onMove);
+  window.addEventListener("touchend",   onEnd);
+  window.addEventListener("mouseup",    onEnd);
+
+  // Rotate button delegation
+  document.addEventListener("touchstart", function(e) {
+    var el = e.target;
+    for (var i = 0; i < 5 && el && el.tagName !== 'BODY'; i++) {
+      if (el.getAttribute && el.getAttribute('data-rotid')) {
+        rotTouchTarget = el.getAttribute('data-rotid');
+        e.stopPropagation();
+        return;
+      }
+      el = el.parentElement;
+    }
+    rotTouchTarget = null;
+  }, {passive: true});
+  document.addEventListener("touchend", function(e) {
+    if (rotTouchTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+      var id = rotTouchTarget;
+      rotTouchTarget = null;
+      window.rotBed(id);
+    }
+  }, {passive: false});
+  document.addEventListener("click", function(e) {
+    var el = e.target;
+    for (var i = 0; i < 5 && el && el.tagName !== 'BODY'; i++) {
+      if (el.getAttribute && el.getAttribute('data-rotid')) {
+        e.stopPropagation();
+        window.rotBed(el.getAttribute('data-rotid'));
+        return;
+      }
+      el = el.parentElement;
+    }
+  });
 }
 
+
+
 function startDrag(e, id) {
-  const el = document.getElementById("mapbed-"+id);
-  const canvas = document.getElementById("map-canvas");
-  const rect = canvas.getBoundingClientRect();
-  const pt = e.touches ? e.touches[0] : e;
-  // Convert screen px to logical canvas px
-  const logicalX = (pt.clientX - rect.left) / mapZoom;
-  const logicalY = (pt.clientY - rect.top)  / mapZoom;
-  const bed = beds.find(b => b.id === id);
+  var el = document.getElementById("mapbed-"+id);
+  var canvas = document.getElementById("map-canvas");
+  var rect = canvas.getBoundingClientRect();
+  var pt = e.touches ? e.touches[0] : e;
+  var MARGIN = 60;
+  // Convert screen px to logical canvas px, accounting for lot margin offset
+  var logicalX = (pt.clientX - rect.left) / mapZoom - MARGIN;
+  var logicalY = (pt.clientY - rect.top)  / mapZoom - MARGIN;
+  var bed = beds.find(function(b){return b.id===id;});
+  if (!bed) return;
   dragState = {
-    id, el, moved: false,
+    id: id, el: el, moved: false,
     ox: logicalX - bed.x,
     oy: logicalY - bed.y,
     startX: bed.x,
@@ -2086,7 +2204,7 @@ function startDrag(e, id) {
 
 let mapZoom = 1;
 function adjustZoom(delta) {
-  mapZoom = Math.max(0.4, Math.min(2.0, mapZoom + delta));
+  mapZoom = Math.max(0.1, Math.min(3.0, mapZoom + delta));
   applyZoom();
 }
 function resetZoom() {
@@ -2094,23 +2212,7 @@ function resetZoom() {
   applyZoom();
 }
 function applyZoom() {
-  const canvas = document.getElementById("map-canvas");
-  // Scale the canvas itself — beds keep their logical px positions
-  canvas.style.width = Math.round(700 * mapZoom) + "px";
-  canvas.style.height = Math.round(600 * mapZoom) + "px";
-  // Scale all beds
-  beds.forEach(b => {
-    const el = document.getElementById("mapbed-" + b.id);
-    if (!el) return;
-    const SCALE = 18;
-    const pw = Math.max(60, b.w * SCALE);
-    const ph = Math.max(44, b.l * SCALE);
-    el.style.left = Math.round(b.x * mapZoom) + "px";
-    el.style.top  = Math.round(b.y * mapZoom) + "px";
-    el.style.width  = Math.round(pw * mapZoom) + "px";
-    el.style.height = Math.round(ph * mapZoom) + "px";
-    el.style.fontSize = Math.round(9 * mapZoom) + "px";
-  });
+  renderMap();
 }
 
 function selectBed(id) { selectedBedId=selectedBedId===id?null:id; renderMap(); }
@@ -3184,10 +3286,12 @@ function renderAll() {
   document.getElementById("cal-week-view").style.display="none";
   document.getElementById("cal-month-view").style.display="none";
   document.getElementById("cal-day-view").style.display="block";
-  renderDashboard(); renderLog(); renderMap(); renderCalendar(); renderCare(); populateAnalyticsFilters();
+  renderDashboard(); renderLog(); renderMap(); setTimeout(function(){if(document.getElementById("view-map").classList.contains("active"))fitCanvasToBeds();},400); renderCalendar(); renderCare(); populateAnalyticsFilters();
 }
 
 loadData();
+
+// Rotate handled via action bar buttons
 </script>
 </body>
 </html>
