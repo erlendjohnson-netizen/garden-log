@@ -467,9 +467,6 @@
     </div>
   </div>
 
-
-</div><!-- end map-canvas-view -->
-
 <!-- SCROLL STRIP: touch-action auto means page scrolls when swiped here -->
 <div style="text-align:center;padding:10px 14px;touch-action:auto;cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:0.5px;user-select:none" onclick="">
   ↕ Swipe here to scroll · tap a bed to edit/rotate/delete
@@ -1830,33 +1827,29 @@ let dragState = null;
 function saveBeds() { try { localStorage.setItem("gl-beds", JSON.stringify(beds)); } catch(e){} }
 function seedBeds() {
   beds = [
-    // ── MAIN GROWING BEDS (front section) ─────────────────────────
-    {id:"b01",name:"Tomato Bed",         w:16, l:3,  shape:"rect",    color:"#2d5016", x:2,  y:5,  notes:"16 varieties"},
-    {id:"b02",name:"Green Bed",          w:8,  l:3,  shape:"rect",    color:"#3a6b20", x:2,  y:12, notes:"Peppers, cukes, radish"},
-    {id:"b03",name:"Square Green Bed",   w:4,  l:3,  shape:"rect",    color:"#4a7a32", x:12, y:12, notes:"Mixed veg"},
-    // ── STRAWBERRY & BERRY BEDS ────────────────────────────────────
-    {id:"b04",name:"Oval Strawberry Bed",w:6,  l:3,  shape:"oval",    color:"#8b2020", x:18, y:5,  notes:"Festival + green onions"},
-    {id:"b05",name:"Square Strawberry",  w:3,  l:3,  shape:"rect",    color:"#8b2020", x:26, y:5,  notes:"Festival"},
-    {id:"b06",name:"Oval Blueberry Bed", w:6,  l:3,  shape:"oval",    color:"#1a3a6b", x:31, y:5,  notes:"3 varieties"},
-    // ── SMALL PLANTERS ─────────────────────────────────────────────
-    {id:"b07",name:"Mint Planter",       w:2,  l:2,  shape:"oval",    color:"#5a8a3a", x:18, y:12, notes:"Mint + Super Sweet 100"},
-    {id:"b08",name:"Dragon Fruit Planter",w:3, l:4,  shape:"rect",    color:"#6a1a8a", x:22, y:11, notes:"Palora, Haley's Comet"},
-    {id:"b09",name:"New Planter",        w:2,  l:3,  shape:"rect",    color:"#7a2a9a", x:27, y:11, notes:"Pink Noid dragon fruit"},
-    {id:"b10",name:"Mango Planter",      w:2,  l:3,  shape:"rect",    color:"#8a5a1a", x:31, y:11, notes:"Carrie mango"},
-    // ── HERB BEDS ──────────────────────────────────────────────────
-    {id:"b11",name:"Herb Bed",           w:6,  l:3,  shape:"rect",    color:"#5a6b20", x:2,  y:20, notes:"Passionfruit, herbs, beans, mora"},
-    {id:"b12",name:"Herb Bed 2",         w:4,  l:3,  shape:"rect",    color:"#6b7a2a", x:10, y:20, notes:"Passionfruit, long beans"},
-    // ── TRIANGULAR IN-GROUND BED ───────────────────────────────────
-    {id:"b13",name:"Triangular Bed",     w:8,  l:4,  shape:"rect",    color:"#1a5c3a", x:2,  y:28, notes:"Prime Ark Freedom, LSU Purple"},
-    // ── IN-GROUND FRUIT TREES ──────────────────────────────────────
-    {id:"b14",name:"Celeste Fig",        w:4,  l:4,  shape:"oval",    color:"#4a2d6b", x:38, y:5,  notes:"In ground"},
-    {id:"b15",name:"LSU Tiger Fig",      w:4,  l:4,  shape:"oval",    color:"#5a3d7b", x:44, y:5,  notes:"In ground"},
-    {id:"b16",name:"LSU Purple Fig",     w:4,  l:4,  shape:"oval",    color:"#3a1d5b", x:50, y:5,  notes:"In ground"},
-    {id:"b17",name:"Florida King Peach", w:5,  l:5,  shape:"oval",    color:"#c4622d", x:38, y:13, notes:"In ground — blooming Apr 2026"},
-    {id:"b18",name:"Owari Satsuma",      w:4,  l:4,  shape:"oval",    color:"#c47a2d", x:44, y:14, notes:"In ground"},
-    {id:"b19",name:"Cara Cara",          w:4,  l:4,  shape:"oval",    color:"#c4622d", x:50, y:14, notes:"In ground"},
-    {id:"b20",name:"Meyer Lemon",        w:4,  l:4,  shape:"oval",    color:"#b8a020", x:38, y:22, notes:"In ground"},
-    {id:"b21",name:"Persian Lime",       w:4,  l:4,  shape:"oval",    color:"#3a6b20", x:44, y:22, notes:"In ground"},
+    {id:"str2",name:"Apartment",w:15,l:30,shape:"house",color:"#8a8a8a",x:810,y:18,notes:"Back NE structure"},
+    {id:"str1",name:"House",w:35,l:40,shape:"house",color:"#9a9a9a",x:225,y:864,notes:"Main house"},
+    {id:"b14",name:"Florida King Peach",w:5,l:5,shape:"oval",color:"#c4622d",x:36,y:54,notes:"In ground — flowering Apr 2026"},
+    {id:"b15",name:"Celeste Fig",w:5,l:5,shape:"oval",color:"#4a2d6b",x:162,y:54,notes:"In ground"},
+    {id:"b16",name:"LSU Tiger Fig",w:5,l:5,shape:"oval",color:"#5a3d7b",x:396,y:54,notes:"In ground"},
+    {id:"b17",name:"LSU Purple Fig",w:5,l:5,shape:"oval",color:"#3a1d5b",x:522,y:54,notes:"In ground"},
+    {id:"b21",name:"Persian Lime",w:4,l:4,shape:"oval",color:"#3a6b20",x:648,y:54,notes:"In ground"},
+    {id:"b20",name:"Meyer Lemon",w:4,l:4,shape:"oval",color:"#b8a020",x:756,y:54,notes:"In ground"},
+    {id:"b18",name:"Owari Satsuma",w:4,l:4,shape:"oval",color:"#c47a2d",x:864,y:54,notes:"In ground"},
+    {id:"b19",name:"Cara Cara",w:4,l:4,shape:"oval",color:"#c4622d",x:972,y:54,notes:"In ground"},
+    {id:"b13",name:"Triangular Bed",w:8,l:4,shape:"rect",color:"#1a5c3a",x:36,y:198,notes:"Prime Ark Freedom, LSU Purple"},
+    {id:"b08",name:"Dragon Fruit Planter",w:4,l:3,shape:"rect",color:"#6a1a8a",x:252,y:198,notes:"Palora, Haley\'s Comet"},
+    {id:"b09",name:"New Planter",w:3,l:3,shape:"rect",color:"#7a2a9a",x:360,y:198,notes:"Pink Noid dragon fruit"},
+    {id:"b10",name:"Mango Planter",w:3,l:3,shape:"rect",color:"#8a5a1a",x:450,y:198,notes:"Carrie mango"},
+    {id:"b01",name:"Tomato Bed",w:16,l:3,shape:"rect",color:"#2d5016",x:36,y:342,notes:"16 varieties + jalapeño, banana pepper, basil, radish"},
+    {id:"b02",name:"Green Bed",w:8,l:3,shape:"rect",color:"#3a6b20",x:36,y:450,notes:"Tomatoes, peppers, cukes, radish"},
+    {id:"b03",name:"Square Green Bed",w:4,l:3,shape:"rect",color:"#4a7a32",x:216,y:450,notes:"Mixed veg + holy basil"},
+    {id:"b11",name:"Herb Bed",w:6,l:3,shape:"rect",color:"#5a6b20",x:324,y:450,notes:"Passionfruit, herbs, beans, mora"},
+    {id:"b12",name:"Herb Bed 2",w:4,l:3,shape:"rect",color:"#6b7a2a",x:468,y:450,notes:"Passionfruit, long beans"},
+    {id:"b04",name:"Oval Strawberry Bed",w:6,l:3,shape:"oval",color:"#8b2020",x:36,y:576,notes:"Festival + green onions"},
+    {id:"b05",name:"Square Strawberry",w:3,l:3,shape:"rect",color:"#8b2020",x:180,y:576,notes:"Festival"},
+    {id:"b06",name:"Oval Blueberry Bed",w:6,l:3,shape:"oval",color:"#1a3a6b",x:270,y:576,notes:"3 varieties"},
+    {id:"b07",name:"Mint Planter",w:2,l:2,shape:"oval",color:"#5a8a3a",x:414,y:576,notes:"Mint + Super Sweet 100"}
   ];
   saveBeds();
 }
@@ -1865,10 +1858,25 @@ function loadBeds() {
   try {
     var b = localStorage.getItem("gl-beds");
     var bv = localStorage.getItem("gl-bed-version");
-    if (b && bv === "v2") { beds = JSON.parse(b); return; }
+    if (b && bv === "v4") {
+      beds = JSON.parse(b);
+      // Migration: fix house position if it was placed on the street
+      var hi = beds.findIndex(function(b){return b.id==="str1";});
+      if (hi >= 0 && beds[hi].y > 1000) {
+        beds[hi] = Object.assign({}, beds[hi], {x:225, y:864});
+        saveBeds();
+      }
+      // Migration: fix apartment to NE corner, correct dimensions
+      var ai = beds.findIndex(function(b){return b.id==="str2";});
+      if (ai >= 0 && (beds[ai].w !== 15 || beds[ai].l !== 30)) {
+        beds[ai] = Object.assign({}, beds[ai], {x:810, y:18, w:15, l:30, notes:"Back NE structure"});
+        saveBeds();
+      }
+      return;
+    }
   } catch(e) {}
   seedBeds();
-  try { localStorage.setItem("gl-bed-version", "v2"); } catch(e) {}
+  try { localStorage.setItem("gl-bed-version", "v4"); } catch(e) {}
 }
 
 function rotateBedFromModal() {
@@ -2012,9 +2020,11 @@ function renderMap() {
     var plants = (bedPlants[b.name]||[]).slice(0,5).map(function(p){return EMOJI[p.crop]||"";}).join("");
     var total = bedHarvestTotals[b.name]||0;
     var isOval = b.shape==="oval"||b.shape==="container";
+    var isHouse = b.shape==="house";
     var br = isOval ? "50%" : (b.shape==="container" ? "10px" : "6px");
     var isSel = selectedBedId===b.id;
     var selStyle = isSel ? "border:3px solid #4a7a32;box-shadow:0 0 0 2px #4a7a3244;" : "";
+    if (isHouse) selStyle = "border:2px dashed #888;";
     var rotBtn = '';
     var weightDiv = total ? '<div class="map-bed-weight">'+fmt(total)+'</div>' : "";
     var div = '<div class="map-bed '+(isSel?"selected":"")+'" id="mapbed-'+b.id+'" data-id="'+b.id+'"';
@@ -2026,6 +2036,9 @@ function renderMap() {
     div += '<div class="map-bed-label">'+b.name+'</div>';
     div += '<div class="map-bed-crops">'+plants+'</div>';
     div += weightDiv + rotBtn + '</div>';
+    if (isHouse) {
+      return '<div id="mapbed-'+b.id+'" style="position:absolute;left:'+zx+'px;top:'+zy+'px;width:'+zpw+'px;height:'+zph+'px;background:'+b.color+';opacity:0.35;border:2px dashed #666;border-radius:4px;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:'+Math.max(8,Math.round(8*mapZoom))+'px;color:#444;font-family:Georgia,serif;font-weight:bold;text-align:center;line-height:1.2">'+b.name+'</div>';
+    }
     return div;
   }).join("");
 
@@ -2042,11 +2055,14 @@ function renderMap() {
     lotSVG += '<text x="'+(lx+lw/2)+'" y="'+(ly+lh+20)+'" text-anchor="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32">'+lotWidth+' ft</text>';
     lotSVG += '<text transform="rotate(-90,'+(lx-18)+','+(ly+lh/2)+')" x="'+(lx-18)+'" y="'+(ly+lh/2)+'" text-anchor="middle" dominant-baseline="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32" font-weight="bold">'+lotDepth+' ft</text>';
     lotSVG += '<text transform="rotate(90,'+(lx+lw+18)+','+(ly+lh/2)+')" x="'+(lx+lw+18)+'" y="'+(ly+lh/2)+'" text-anchor="middle" dominant-baseline="middle" font-family="Georgia,serif" font-size="'+fs+'" fill="#4a7a32">'+lotDepth+' ft</text>';
+    // Street label + compass
+    lotSVG += '<text x="'+(lx+lw/2)+'" y="'+(ly+lh+36)+'" text-anchor="middle" font-family="Georgia,serif" font-size="'+Math.max(8,Math.round(10*mapZoom))+'" fill="#888" font-style="italic">Tullulah Ave (S)</text>';
+    lotSVG += '<text x="'+(lx-16)+'" y="'+(ly-16)+'" text-anchor="middle" font-family="Georgia,serif" font-size="'+Math.max(9,Math.round(10*mapZoom))+'" fill="#aaa" font-weight="bold">N</text>';
     lotSVG += '</svg>';
   }
 
   canvas.innerHTML = bedHTML + lotSVG;
-  setupDrag(canvas);
+  if (!canvas.dataset.dragSetup) { canvas.dataset.dragSetup = "1"; setupDrag(canvas); }
 
   // Update action bar
   var actionBar = document.getElementById("bed-action-bar");
