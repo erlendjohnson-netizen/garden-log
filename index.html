@@ -316,6 +316,7 @@
     <div id="settings-summary" style="font-size:12px;color:var(--muted2);line-height:1.8;margin-bottom:10px"></div>
     <button class="btn btn-secondary btn-full" style="font-size:13px" onclick="openSetup(true)">Edit name, location, zone &amp; units</button>
     <button class="btn btn-secondary btn-full" style="font-size:13px;margin-top:8px" onclick="openCropModal()">🌱 Crops &amp; varieties</button>
+    <button class="btn btn-secondary btn-full" style="font-size:13px;margin-top:8px;color:#b03a2e;border-color:#e3b5ae" onclick="startOver()">↺ Start over (erase everything)</button>
   </div>
 </div>
 
@@ -345,14 +346,14 @@
     <div id="form-harvest">
       <div class="field"><label>Date</label><input type="date" id="h-date"></div>
       <div class="field"><label>Crop</label>
-        <select id="h-crop" onchange="updateVarieties()"></select>
+        <select id="h-crop" onchange="if(!editId)hBedTouched=false;updateVarieties()"></select>
       </div>
       <div class="field"><label>Variety</label><select id="h-variety" onchange="varietySelectChanged(this,'h-crop')"></select></div>
       <div class="field"><label>Bed / Location</label>
-        <select id="h-bed"></select>
+        <select id="h-bed" onchange="hBedTouched=true"></select>
       </div>
       <div class="field-row">
-        <div class="field"><label>Weight (<span class="unit-name">g</span>) <span style="text-transform:none;letter-spacing:0">· optional</span></label><input type="number" inputmode="decimal" step="any" min="0" id="h-weight" placeholder="skip if not weighed" oninput="updateEstimateHint()"></div>
+        <div class="field"><label>Weight <span style="text-transform:none;letter-spacing:0">· optional</span></label><div style="display:flex;gap:4px"><input type="number" inputmode="decimal" step="any" min="0" id="h-weight" placeholder="skip if not weighed" oninput="updateEstimateHint();renderWunit()" style="flex:1;min-width:0"></div></div>
         <div class="field"><label>Count</label>
           <div style="display:flex;gap:4px">
             <button type="button" class="btn btn-secondary" style="padding:8px 12px" onclick="bumpCount(-1)">−</button>
@@ -361,7 +362,8 @@
           </div>
         </div>
       </div>
-      <div id="h-estimate-hint" style="font-size:12px;color:var(--muted2);margin:-6px 0 12px"></div>
+      <div id="h-wunit-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-6px 0 6px;font-size:12px;color:var(--muted2)"></div>
+      <div id="h-estimate-hint" style="font-size:12px;color:var(--muted2);margin:0 0 12px"></div>
       <div class="field"><label>Notes</label><input type="text" id="h-notes" placeholder="Anything notable..."></div>
       <div class="field">
         <label>Photo</label>
@@ -384,40 +386,63 @@
       <div class="field"><label>Date</label><input type="date" id="c-date"></div>
       <div class="field"><label>Care Type</label>
         <select id="c-type" onchange="updateCareTimer(true)">
-          <optgroup label="── Insecticides ──">
-            <option value="spray-spinosad">Spray — Spinosad (7-day)</option>
-            <option value="spray-bt">Spray — BT Thuracide (7-day)</option>
-            <option value="spray-pyrethrin">Spray — Pyrethrin (7-day)</option>
-            <option value="spray-insecticidal">Spray — Insecticidal Soap (7-day)</option>
-            <option value="spray-neem">Spray — Neem Oil (14-day)</option>
-            <option value="spray-hort-oil">Spray — Horticultural Oil (14-day)</option>
+          <optgroup label="── Insect sprays & dusts ──">
+            <option value="spray-insecticidal">Insecticidal soap (7-day)</option>
+            <option value="spray-neem">Neem oil (14-day)</option>
+            <option value="spray-hort-oil">Horticultural oil (14-day)</option>
+            <option value="spray-pyrethrin">Pyrethrin (7-day)</option>
+            <option value="spray-spinosad">Spinosad (7-day)</option>
+            <option value="spray-bt">Bt (Bacillus thuringiensis) (7-day)</option>
+            <option value="spray-kaolin">Kaolin clay (Surround) (10-day)</option>
+            <option value="spray-carbaryl">Carbaryl spray (Sevin) (7-day)</option>
+            <option value="spray-sevin-dust">Sevin dust (7-day)</option>
+            <option value="spray-de">Diatomaceous earth (7-day)</option>
+            <option value="spray-slug-bait">Slug & snail bait (iron phosphate) (14-day)</option>
           </optgroup>
-          <optgroup label="── Fungicides ──">
-            <option value="spray-copper">Spray — Copper (Peyton 35) (30-day)</option>
-            <option value="spray-sulfur">Spray — Sulfur (7-day)</option>
-            <option value="spray-other">Spray — Other</option>
+          <optgroup label="── Disease sprays ──">
+            <option value="spray-copper">Copper fungicide (10-day)</option>
+            <option value="spray-chlorothalonil">Chlorothalonil (Daconil) (7-day)</option>
+            <option value="spray-sulfur">Sulfur (7-day)</option>
+            <option value="spray-bicarb">Potassium bicarbonate (7-day)</option>
+            <option value="spray-bsubtilis">Bacillus subtilis (Serenade, Cease) (7-day)</option>
+            <option value="spray-other">Other spray (7-day)</option>
           </optgroup>
-          <optgroup label="── Soluble Fertilizers ──">
-            <option value="fert-20-20-20">Fertilizer — 20-20-20 All-Purpose (14-day)</option>
-            <option value="fert-bloom">Fertilizer — 10-15-35 Bloom Booster (14-day)</option>
-            <option value="fert-fish">Fertilizer — Fish Emulsion (14-day)</option>
-            <option value="fert-kelp">Fertilizer — Kelp / Seaweed (14-day)</option>
-            <option value="fert-calcium">Spray — Calcium (14-day)</option>
-            <option value="fert-epsom">Fertilizer — Epsom Salt (30-day)</option>
-            <option value="fert-soluble">Fertilizer — Soluble Other (14-day)</option>
+          <optgroup label="── Organic fertilizers (slow-acting) ──">
+            <option value="fert-organic-granular">Organic granular (Tomato-tone, Garden-tone) (30-day)</option>
+            <option value="fert-compost">Compost / top-dress (90-day)</option>
+            <option value="fert-manure">Composted manure (90-day)</option>
+            <option value="fert-castings">Worm castings (60-day)</option>
+            <option value="fert-bone-meal">Bone meal (60-day)</option>
+            <option value="fert-blood-meal">Blood meal (45-day)</option>
+            <option value="fert-crab-meal">Crab meal (60-day)</option>
           </optgroup>
-          <optgroup label="── Granular / Amendments ──">
-            <option value="fert-ammonium-sulfate">Fertilizer — Ammonium Sulfate (30-day)</option>
-            <option value="fert-potassium-sulfate">Fertilizer — Potassium Sulfate (30-day)</option>
-            <option value="fert-bone-meal">Fertilizer — Bone Meal (60-day)</option>
-            <option value="fert-slow-release">Fertilizer — Slow Release Granular (90-day)</option>
-            <option value="fert-compost">Compost / Top Dress (90-day)</option>
-            <option value="fert-granular">Fertilizer — Granular Other (30-day)</option>
+          <optgroup label="── Organic liquid feeds ──">
+            <option value="fert-fish">Fish emulsion (14-day)</option>
+            <option value="fert-kelp">Kelp / seaweed (14-day)</option>
           </optgroup>
-          <optgroup label="── General ──">
-            <option value="water">Watering / Irrigation check</option>
-            <option value="prune">Pruning / Training</option>
+          <optgroup label="── Synthetic fertilizers ──">
+            <option value="fert-20-20-20">All-purpose water-soluble (20-20-20) (14-day)</option>
+            <option value="fert-bloom">Bloom booster (high P-K) (14-day)</option>
+            <option value="fert-granular">Synthetic granular (10-10-10) (30-day)</option>
+            <option value="fert-slow-release">Slow-release coated (Osmocote) (90-day)</option>
+            <option value="fert-soluble">Other liquid fertilizer (14-day)</option>
+            <option value="fert-ammonium-sulfate">Ammonium sulfate (30-day)</option>
+            <option value="fert-potassium-sulfate">Potassium sulfate (30-day)</option>
+          </optgroup>
+          <optgroup label="── Supplements & soil ──">
+            <option value="fert-calcium">Calcium (Cal-Mag, foliar) (14-day)</option>
+            <option value="fert-epsom">Epsom salt (magnesium) (30-day)</option>
+            <option value="fert-lime">Garden lime (raise pH)</option>
+            <option value="fert-soil-sulfur">Soil sulfur (lower pH)</option>
+          </optgroup>
+          <optgroup label="── Garden work ──">
+            <option value="water">Watering / irrigation check</option>
+            <option value="mulch">Mulching</option>
+            <option value="weed">Weeding</option>
+            <option value="prune">Pruning / training</option>
             <option value="transplant">Transplanting</option>
+            <option value="frost-cover">Frost cover / row cover</option>
+            <option value="soil-test">Soil test</option>
             <option value="harvest-care">Harvest prep / cleanup</option>
             <option value="other">Other</option>
           </optgroup>
@@ -659,13 +684,14 @@
     <div class="modal-sub">Define a growing space</div>
     <div class="field"><label>Nickname</label><input type="text" id="bed-name" placeholder="e.g. Oval Stock Tank"></div>
     <div class="field-row">
-      <div class="field"><label>Width (ft)</label><input type="number" id="bed-w" placeholder="4" step="0.5"></div>
-      <div class="field"><label>Length (ft)</label><input type="number" id="bed-l" placeholder="8" step="0.5"></div>
+      <div class="field"><label id="bed-w-label">Width (ft)</label><input type="number" id="bed-w" placeholder="4" step="0.5"></div>
+      <div class="field"><label id="bed-l-label">Length (ft)</label><input type="number" id="bed-l" placeholder="8" step="0.5"></div>
     </div>
     <div class="field"><label>Shape</label>
-      <select id="bed-shape">
+      <select id="bed-shape" onchange="bedShapeChanged()">
         <option value="rect">Rectangle / Square</option>
         <option value="oval">Oval / Round</option>
+        <option value="triangle">Triangle</option>
         <option value="container">Container / Pot</option>
         <option value="row">Row / In-ground</option>
       </select>
@@ -680,6 +706,8 @@
         <div class="color-swatch" data-color="#3a2a1a" style="background:#3a2a1a" onclick="selectBedColor(this)">🌻</div>
       </div>
     </div>
+    <div class="field" id="bed-apex-wrap" style="display:none"><label>On the map, the point faces</label>
+      <select id="bed-apex"><option value="up">↑ Up</option><option value="right">→ Right</option><option value="down">↓ Down</option><option value="left">← Left</option></select></div>
     <div class="field"><label>Notes</label><input type="text" id="bed-notes" placeholder="Soil mix, sun exposure..."></div>
     <input type="hidden" id="bed-edit-id">
     <div class="btn-row" style="margin-top:4px">
@@ -712,6 +740,7 @@
       <button class="type-tab" data-ptab="plantings" onclick="setPlanTab('plantings')">Plantings</button>
       <button class="type-tab" data-ptab="programs" onclick="setPlanTab('programs')">Programs</button>
       <button class="type-tab" data-ptab="windows" onclick="setPlanTab('windows')">Windows</button>
+      <button class="type-tab" data-ptab="season" onclick="setPlanTab('season')">Season</button>
     </div>
   </div>
 
@@ -720,7 +749,8 @@
 
   <!-- PLANTINGS -->
   <div id="plan-plantings" class="plan-pane" style="display:none;padding:0 14px">
-    <button class="btn btn-primary btn-full" style="margin-bottom:12px" onclick="openPlantingModal()">+ Plan a planting</button>
+    <button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="openPlantingModal()">+ Plan a planting</button>
+    <button class="btn btn-secondary btn-full" style="margin-bottom:12px" onclick="pasteSharedPlan()">＋ Add a shared plan (paste link)</button>
     <div id="plantings-list"></div>
   </div>
 
@@ -731,6 +761,9 @@
     <div id="program-presets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <div id="programs-list"></div>
   </div>
+
+  <!-- SEASON PLANNER -->
+  <div id="plan-season" class="plan-pane" style="display:none;padding:0 14px"></div>
 
   <!-- WINDOWS (season planting windows) -->
   <div id="plan-windows" class="plan-pane" style="display:none">
@@ -783,16 +816,20 @@
     </div>
     <div class="field-row">
       <div class="field"><label>Days to first harvest</label><input type="number" inputmode="numeric" id="pl-dtm" min="1" onchange="plDatesChanged()"></div>
-      <div class="field"><label>Repeat (succession)</label>
-        <select id="pl-repeat">
-          <option value="0">No repeat</option>
-          <option value="2">Every 2 weeks ×3</option>
-          <option value="3">Every 3 weeks ×3</option>
-          <option value="4">Every 4 weeks ×3</option>
-        </select>
-      </div>
     </div>
     <div id="pl-harvest-hint" style="font-size:12px;color:var(--green);margin:-6px 0 12px"></div>
+    <div class="field" id="pl-succ-wrap"><label>🔁 Succession planting</label>
+      <div id="pl-succ-tip" style="font-size:12px;color:var(--muted2);line-height:1.5;margin-bottom:6px"></div>
+      <div class="field-row" style="margin-bottom:0">
+        <select id="pl-repeat" onchange="plSuccUpdate()"></select>
+        <select id="pl-rounds" onchange="plSuccUpdate()">
+          <option value="window">Until the season ends</option>
+          <option value="2">2 rounds</option><option value="3">3 rounds</option><option value="4">4 rounds</option><option value="6">6 rounds</option><option value="8">8 rounds</option>
+        </select>
+      </div>
+      <div id="pl-succ-preview" style="font-size:12px;line-height:1.6;margin-top:6px"></div>
+    </div>
+    <div id="pl-next-round" style="display:none;background:#e8f0df;border-radius:10px;padding:10px;margin-bottom:12px"></div>
     <div class="field"><label>Notes</label><input type="text" id="pl-notes" placeholder="Seed source, spacing, interplant with…"></div>
     <input type="hidden" id="pl-edit-id">
     <div class="btn-row">
@@ -1144,10 +1181,22 @@
     </div>
 
     <div id="setup-step-9" style="display:none">
+      <div style="font-size:32px;text-align:center;margin-bottom:12px">🎯</div>
+      <h2 style="font-size:20px;font-weight:normal;color:#2a4a1a;text-align:center;margin-bottom:8px">What do you want most from your garden?</h2>
+      <p style="font-size:13px;color:#7a6e58;text-align:center;margin-bottom:14px">Pick one or two. This shapes the season planner’s suggestions, and you can change it for each year’s plan.</p>
+      <div id="setup-goals"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-secondary" onclick="prevSetupStep()">← Back</button>
+        <button class="btn btn-primary" style="flex:2" onclick="nextSetupStep()">Continue →</button>
+      </div>
+    </div>
+
+    <div id="setup-step-10" style="display:none">
       <div style="font-size:40px;text-align:center;margin-bottom:16px">✅</div>
       <h2 style="font-size:22px;font-weight:normal;color:#2a4a1a;text-align:center;margin-bottom:8px">You're all set!</h2>
       <div id="setup-summary" style="background:#f0ede4;border-radius:10px;padding:16px;margin:20px 0;font-size:13px;line-height:2;color:#5a5040"></div>
-      <button class="btn btn-primary btn-full" style="font-size:16px;padding:14px" onclick="finishSetup()">Start gardening 🌱</button>
+      <button class="btn btn-primary btn-full" style="font-size:16px;padding:14px" onclick="finishSetup();openSeasonPlanner()">📅 Plan this season's crops</button>
+      <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="finishSetup()">Skip for now — start gardening 🌱</button>
     </div>
   </div>
 </div>
@@ -1196,7 +1245,7 @@
 // ── DEFAULT CROP DATABASE ──
 const DEFAULT_CROPS = [
   { key:"tomato", label:"Tomato", emoji:"🍅", color:"#e74c3c", varieties:["Sungold", "Super Sweet 100", "Barry's Crazy Cherry", "Shelby", "Early Girl", "Hossinator", "Redsnapper", "Mushroom Basket", "Lemon Boy", "Norfolk Purple", "Cherokee Purple", "Black Krim", "Brandywine", "Roma", "San Marzano", "Celebrity", "Better Boy", "Mortgage Lifter", "Green Zebra", "Pink Berkeley Tie Dye"] },
-  { key:"pepper", label:"Pepper", emoji:"🌶️", color:"#e8a020", varieties:["Shishito", "Serrano", "Scotch Bonnet", "Thai", "Aji Chincha", "Fatali", "Habanero", "Jalape\u00f1o", "Banana", "Bell", "Cayenne", "Güero", "Poblano", "Ghost", "Carolina Reaper", "Cubanelle", "Pimento", "Padron", "Lemon Drop", "Aji Amarillo"] },
+  { key:"pepper", label:"Pepper", emoji:"🌶️", color:"#e8a020", varieties:["Shishito", "Serrano", "Scotch Bonnet", "Thai", "Aji Chincha", "Fatali", "Habanero", "Jalape\u00f1o", "Banana", "Bell", "Cayenne", "Anaheim", "Güero", "Poblano", "Ghost", "Carolina Reaper", "Cubanelle", "Pimento", "Padron", "Lemon Drop", "Aji Amarillo"] },
   { key:"eggplant", label:"Eggplant", emoji:"🍆", color:"#6c3483", varieties:["Camo Camo", "Black Beauty", "Ichiban", "Rosa Bianca", "Ping Tung Long", "Fairy Tale", "Calliope", "Orient Express", "Listada de Gandia", "White"] },
   { key:"cucumber", label:"Cucumber", emoji:"🥒", color:"#27ae60", varieties:["Merlin", "Beit Alpha", "Marketmore", "Straight Eight", "Spacemaster", "Muncher", "Lemon", "Armenian", "English", "Persian", "Calypso", "Bush Pickle"] },
   { key:"okra", label:"Okra", emoji:"🌿", color:"#5a8a2a", varieties:["Clemson Spineless", "Emerald", "Burgundy", "Cajun Delight", "Annie Oakley", "Silver Queen", "Jambalaya", "Louisiana Green Velvet", "Stewart's Zeebest", "Hill Country Red"] },
@@ -1245,7 +1294,7 @@ let cropRegistry = [];
 
 function loadCropRegistry() {
   try {
-    const saved = localStorage.getItem("gl-crops");
+    const saved = localStorage.getItem("gl-demo-crops");
     if (saved) { cropRegistry = JSON.parse(saved); return; }
   } catch(e) {}
   cropRegistry = DEFAULT_CROPS.map(c => ({...c, varieties:[...c.varieties]}));
@@ -1253,7 +1302,7 @@ function loadCropRegistry() {
 }
 
 function saveCropRegistry() {
-  try { localStorage.setItem("gl-crops", JSON.stringify(cropRegistry)); } catch(e) {}
+  try { localStorage.setItem("gl-demo-crops", JSON.stringify(cropRegistry)); } catch(e) {}
 }
 
 function getCropKeys() { return cropRegistry.map(c=>c.key); }
@@ -1301,40 +1350,10 @@ const MONTH_TASKS = {
   12:["Start pepper seeds indoors for spring","Plan next season","Mulch perennials","Rest & reflection 🌿"],
 };
 
-const CARE_INTERVALS = {
-  "spray-spinosad":7,"spray-bt":7,"spray-pyrethrin":7,"spray-insecticidal":7,"spray-other":7,
-  "spray-neem":14,"spray-hort-oil":14,"spray-sulfur":7,
-  "spray-copper":30,
-  "fert-20-20-20":14,"fert-bloom":14,"fert-fish":14,"fert-kelp":14,"fert-calcium":14,
-  "fert-epsom":30,"fert-soluble":14,
-  "fert-ammonium-sulfate":30,"fert-potassium-sulfate":30,"fert-granular":30,
-  "fert-bone-meal":60,"fert-slow-release":90,"fert-compost":90
-};
+const CARE_INTERVALS = {"spray-insecticidal": 7, "spray-neem": 14, "spray-hort-oil": 14, "spray-pyrethrin": 7, "spray-spinosad": 7, "spray-bt": 7, "spray-kaolin": 10, "spray-carbaryl": 7, "spray-sevin-dust": 7, "spray-de": 7, "spray-slug-bait": 14, "spray-copper": 10, "spray-chlorothalonil": 7, "spray-sulfur": 7, "spray-bicarb": 7, "spray-bsubtilis": 7, "spray-other": 7, "fert-organic-granular": 30, "fert-compost": 90, "fert-manure": 90, "fert-castings": 60, "fert-bone-meal": 60, "fert-blood-meal": 45, "fert-crab-meal": 60, "fert-fish": 14, "fert-kelp": 14, "fert-20-20-20": 14, "fert-bloom": 14, "fert-granular": 30, "fert-slow-release": 90, "fert-soluble": 14, "fert-ammonium-sulfate": 30, "fert-potassium-sulfate": 30, "fert-calcium": 14, "fert-epsom": 30};
 // chronic = always set reminder by default; as-needed = no reminder by default; none = never remind
-const CARE_MODE = {
-  "spray-spinosad":"as-needed","spray-bt":"as-needed","spray-pyrethrin":"as-needed",
-  "spray-insecticidal":"as-needed","spray-neem":"as-needed","spray-hort-oil":"as-needed",
-  "spray-sulfur":"as-needed","spray-other":"as-needed",
-  "spray-copper":"chronic",
-  "fert-20-20-20":"chronic","fert-bloom":"chronic","fert-fish":"chronic","fert-kelp":"chronic",
-  "fert-calcium":"chronic","fert-epsom":"chronic","fert-soluble":"chronic",
-  "fert-ammonium-sulfate":"chronic","fert-potassium-sulfate":"chronic","fert-granular":"chronic",
-  "fert-bone-meal":"chronic","fert-slow-release":"chronic","fert-compost":"chronic",
-  "water":"none","prune":"none","transplant":"none","harvest-care":"none","other":"none"
-};
-const CARE_LABELS = {
-  "spray-spinosad":"Spinosad","spray-bt":"BT Thuracide","spray-pyrethrin":"Pyrethrin",
-  "spray-insecticidal":"Insecticidal Soap","spray-neem":"Neem Oil","spray-hort-oil":"Horticultural Oil",
-  "spray-sulfur":"Sulfur Spray","spray-copper":"Copper Spray","spray-other":"Spray",
-  "fert-20-20-20":"20-20-20 Fertilizer","fert-bloom":"Bloom Booster 10-15-35",
-  "fert-fish":"Fish Emulsion","fert-kelp":"Kelp/Seaweed","fert-calcium":"Calcium Spray",
-  "fert-epsom":"Epsom Salt","fert-soluble":"Soluble Fertilizer",
-  "fert-ammonium-sulfate":"Ammonium Sulfate","fert-potassium-sulfate":"Potassium Sulfate",
-  "fert-bone-meal":"Bone Meal","fert-slow-release":"Slow Release Granular",
-  "fert-compost":"Compost","fert-granular":"Granular Fertilizer",
-  "water":"Watering","prune":"Pruning","transplant":"Transplanting",
-  "harvest-care":"Harvest Prep","other":"Care"
-};
+const CARE_MODE = {"spray-insecticidal": "as-needed", "spray-neem": "as-needed", "spray-hort-oil": "as-needed", "spray-pyrethrin": "as-needed", "spray-spinosad": "as-needed", "spray-bt": "as-needed", "spray-kaolin": "as-needed", "spray-carbaryl": "as-needed", "spray-sevin-dust": "as-needed", "spray-de": "as-needed", "spray-slug-bait": "as-needed", "spray-copper": "chronic", "spray-chlorothalonil": "chronic", "spray-sulfur": "as-needed", "spray-bicarb": "as-needed", "spray-bsubtilis": "as-needed", "spray-other": "as-needed", "fert-organic-granular": "chronic", "fert-compost": "chronic", "fert-manure": "chronic", "fert-castings": "chronic", "fert-bone-meal": "chronic", "fert-blood-meal": "chronic", "fert-crab-meal": "chronic", "fert-fish": "chronic", "fert-kelp": "chronic", "fert-20-20-20": "chronic", "fert-bloom": "chronic", "fert-granular": "chronic", "fert-slow-release": "chronic", "fert-soluble": "chronic", "fert-ammonium-sulfate": "chronic", "fert-potassium-sulfate": "chronic", "fert-calcium": "chronic", "fert-epsom": "chronic", "fert-lime": "none", "fert-soil-sulfur": "none", "water": "none", "mulch": "none", "weed": "none", "prune": "none", "transplant": "none", "frost-cover": "none", "soil-test": "none", "harvest-care": "none", "other": "none"};
+const CARE_LABELS = {"spray-insecticidal": "Insecticidal soap", "spray-neem": "Neem oil", "spray-hort-oil": "Horticultural oil", "spray-pyrethrin": "Pyrethrin", "spray-spinosad": "Spinosad", "spray-bt": "Bt (Bacillus thuringiensis)", "spray-kaolin": "Kaolin clay (Surround)", "spray-carbaryl": "Carbaryl spray (Sevin)", "spray-sevin-dust": "Sevin dust", "spray-de": "Diatomaceous earth", "spray-slug-bait": "Slug & snail bait (iron phosphate)", "spray-copper": "Copper fungicide", "spray-chlorothalonil": "Chlorothalonil (Daconil)", "spray-sulfur": "Sulfur", "spray-bicarb": "Potassium bicarbonate", "spray-bsubtilis": "Bacillus subtilis (Serenade, Cease)", "spray-other": "Other spray", "fert-organic-granular": "Organic granular (Tomato-tone, Garden-tone)", "fert-compost": "Compost / top-dress", "fert-manure": "Composted manure", "fert-castings": "Worm castings", "fert-bone-meal": "Bone meal", "fert-blood-meal": "Blood meal", "fert-crab-meal": "Crab meal", "fert-fish": "Fish emulsion", "fert-kelp": "Kelp / seaweed", "fert-20-20-20": "All-purpose water-soluble (20-20-20)", "fert-bloom": "Bloom booster (high P-K)", "fert-granular": "Synthetic granular (10-10-10)", "fert-slow-release": "Slow-release coated (Osmocote)", "fert-soluble": "Other liquid fertilizer", "fert-ammonium-sulfate": "Ammonium sulfate", "fert-potassium-sulfate": "Potassium sulfate", "fert-calcium": "Calcium (Cal-Mag, foliar)", "fert-epsom": "Epsom salt (magnesium)", "fert-lime": "Garden lime (raise pH)", "fert-soil-sulfur": "Soil sulfur (lower pH)", "water": "Watering / irrigation check", "mulch": "Mulching", "weed": "Weeding", "prune": "Pruning / training", "transplant": "Transplanting", "frost-cover": "Frost cover / row cover", "soil-test": "Soil test", "harvest-care": "Harvest prep / cleanup", "other": "Other"};
 
 // Bed definitions for map
 const BEDS_DEF = [
@@ -1348,12 +1367,12 @@ const BEDS_DEF = [
 // ===================== STATE =====================
 let harvests = [], careLog = [], plantLog = [], selectedBed = null;
 let filterCrop = "all", deleteTarget = null, deleteType = null;
-let displayUnit = localStorage.getItem("gl-unit") || "lb";
+let displayUnit = localStorage.getItem("gl-demo-unit") || "g";
 let editId = null, editType = null, addType = "harvest", calMonth = new Date().getMonth() + 1;
 let photoData = { h: null, c: null, p: null };
 
 // ===================== HELPERS =====================
-const LS = "gl-"; // storage prefix — personal edition
+const LS = "gl-demo-"; // storage prefix for this edition
 
 // Local calendar date (YYYY-MM-DD). toISOString() is UTC, which rolls
 // evening entries over to tomorrow in the Americas.
@@ -1460,19 +1479,19 @@ async function loadData() {
   loadCropRegistry(); mergeLibraryCrops();
   loadPlanData();
   try {
-    const h  = localStorage.getItem("gl-harvests");
-    const hv = localStorage.getItem("gl-harvest-version");
-    const c  = localStorage.getItem("gl-care");
-    const cv = localStorage.getItem("gl-care-version");
-    const p  = localStorage.getItem("gl-plants");
-    const pv = localStorage.getItem("gl-plant-version");
+    const h  = localStorage.getItem("gl-demo-harvests");
+    const hv = localStorage.getItem("gl-demo-harvest-version");
+    const c  = localStorage.getItem("gl-demo-care");
+    const cv = localStorage.getItem("gl-demo-care-version");
+    const p  = localStorage.getItem("gl-demo-plants");
+    const pv = localStorage.getItem("gl-demo-plant-version");
 
     // Harvests — re-seed if version outdated
     if (h && hv === "v2") {
       harvests = JSON.parse(h); loadHarvestPhotos();
     } else {
       seedHarvests();
-      try { localStorage.setItem("gl-harvest-version", "v2"); } catch(e) {}
+      try { localStorage.setItem("gl-demo-harvest-version", "v2"); } catch(e) {}
     }
 
     // Care — re-seed if version outdated (bumping forces fresh Apr 8 data)
@@ -1480,7 +1499,7 @@ async function loadData() {
       careLog = JSON.parse(c);
     } else {
       seedCare();
-      try { localStorage.setItem("gl-care-version", "v2"); } catch(e) {}
+      try { localStorage.setItem("gl-demo-care-version", "v2"); } catch(e) {}
     }
 
     // Plants — re-seed if version outdated
@@ -1488,7 +1507,7 @@ async function loadData() {
       plantLog = JSON.parse(p);
     } else {
       seedPlants();
-      try { localStorage.setItem("gl-plant-version", "v2"); } catch(e) {}
+      try { localStorage.setItem("gl-demo-plant-version", "v2"); } catch(e) {}
     }
 
   } catch(e) { seedHarvests(); seedCare(); seedPlants(); }
@@ -1502,158 +1521,33 @@ function saveHarvests() {
       if (h.photo) { photos[h.id] = h.photo; }
       return Object.assign({}, h, {photo: h.photo ? true : null});
     });
-    try { localStorage.setItem("gl-harvest-photos", JSON.stringify(photos)); } catch(e) {}
-    localStorage.setItem("gl-harvests", JSON.stringify(slim));
+    try { localStorage.setItem("gl-demo-harvest-photos", JSON.stringify(photos)); } catch(e) {}
+    localStorage.setItem("gl-demo-harvests", JSON.stringify(slim));
   } catch(e) { toast("⚠️ Save failed — storage full. Try deleting old photo entries."); }
 }
 function loadHarvestPhotos() {
   try {
-    const p = JSON.parse(localStorage.getItem("gl-harvest-photos")||"{}");
+    const p = JSON.parse(localStorage.getItem("gl-demo-harvest-photos")||"{}");
     harvests = harvests.map(function(h) {
       return Object.assign({}, h, {photo: h.photo ? (p[h.id] || null) : null});
     });
   } catch(e) {}
 }
-function saveCare() { try { localStorage.setItem("gl-care", JSON.stringify(careLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
-function savePlants() { try { localStorage.setItem("gl-plants", JSON.stringify(plantLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
+function saveCare() { try { localStorage.setItem("gl-demo-care", JSON.stringify(careLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
+function savePlants() { try { localStorage.setItem("gl-demo-plants", JSON.stringify(plantLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
 
 function seedHarvests() {
-  harvests = [
-    {id:1,date:"2026-02-22",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:21,count:1,notes:"first",photo:null},
-    {id:2,date:"2026-02-22",crop:"pepper",variety:"Serrano",bed:"Green Bed",weight:3,count:1,notes:"from transplanting",photo:null},
-    {id:3,date:"2026-02-25",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:26,count:2,notes:"transplants",photo:null},
-    {id:4,date:"2026-03-01",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:26,count:1,notes:"",photo:null},
-    {id:5,date:"2026-03-03",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:30,count:1,notes:"",photo:null},
-    {id:6,date:"2026-03-06",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:76,count:5,notes:"",photo:null},
-    {id:7,date:"2026-03-07",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:236,count:16,notes:"",photo:null},
-    {id:8,date:"2026-03-07",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:6,count:2,notes:"",photo:null},
-    {id:9,date:"2026-03-08",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:54,count:5,notes:"",photo:null},
-    {id:10,date:"2026-03-10",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:26,count:2,notes:"",photo:null},
-    {id:11,date:"2026-03-11",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:57,count:5,notes:"",photo:null},
-    {id:12,date:"2026-03-13",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:281,count:3,notes:"First harvest",photo:null},
-    {id:13,date:"2026-03-14",crop:"strawberry",variety:"Festival",bed:"Square",weight:2,count:1,notes:"Deformed not quite ripe",photo:null},
-    {id:14,date:"2026-03-14",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:91,count:7,notes:"",photo:null},
-    {id:15,date:"2026-03-15",crop:"strawberry",variety:"Festival",bed:"Square",weight:6,count:1,notes:"Ugly too",photo:null},
-    {id:16,date:"2026-03-16",crop:"strawberry",variety:"Festival",bed:"Oval",weight:16,count:2,notes:"",photo:null},
-    {id:17,date:"2026-03-18",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:26,count:3,notes:"",photo:null},
-    {id:18,date:"2026-03-20",crop:"strawberry",variety:"Festival",bed:"Oval",weight:8,count:1,notes:"",photo:null},
-    {id:19,date:"2026-03-21",crop:"strawberry",variety:"Festival",bed:"Oval",weight:5,count:2,notes:"",photo:null},
-    {id:20,date:"2026-03-21",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:3,count:2,notes:"",photo:null},
-    {id:21,date:"2026-03-21",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:150,count:1,notes:"",photo:null},
-    {id:22,date:"2026-03-22",crop:"strawberry",variety:"Festival",bed:"Oval",weight:14,count:2,notes:"",photo:null},
-    {id:23,date:"2026-03-22",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:40,count:1,notes:"",photo:null},
-    {id:24,date:"2026-03-23",crop:"strawberry",variety:"Festival",bed:"Oval",weight:14,count:2,notes:"",photo:null},
-    {id:25,date:"2026-03-24",crop:"strawberry",variety:"Festival",bed:"Oval",weight:42,count:6,notes:"",photo:null},
-    {id:26,date:"2026-03-24",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:5,count:3,notes:"",photo:null},
-    {id:27,date:"2026-03-24",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:396,count:4,notes:"",photo:null},
-    {id:28,date:"2026-03-24",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:14,count:1,notes:"",photo:null},
-    {id:29,date:"2026-03-25",crop:"strawberry",variety:"Festival",bed:"Oval",weight:73,count:9,notes:"",photo:null},
-    {id:30,date:"2026-03-25",crop:"strawberry",variety:"Festival",bed:"Oval",weight:49,count:3,notes:"",photo:null},
-    {id:31,date:"2026-03-25",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:202,count:2,notes:"",photo:null},
-    {id:32,date:"2026-03-26",crop:"strawberry",variety:"Festival",bed:"Oval",weight:46,count:5,notes:"",photo:null},
-    {id:33,date:"2026-03-29",crop:"strawberry",variety:"Festival",bed:"Oval",weight:110,count:16,notes:"",photo:null},
-    {id:34,date:"2026-03-29",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:5,count:3,notes:"",photo:null},
-    {id:35,date:"2026-03-29",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:46,count:1,notes:"",photo:null},
-    {id:36,date:"2026-03-30",crop:"strawberry",variety:"Festival",bed:"Oval",weight:46,count:4,notes:"",photo:null},
-    {id:37,date:"2026-03-30",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:96,count:2,notes:"",photo:null},
-    {id:38,date:"2026-03-30",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:23,count:3,notes:"",photo:null},
-    {id:39,date:"2026-03-31",crop:"strawberry",variety:"Festival",bed:"Oval",weight:41,count:3,notes:"",photo:null},
-    {id:40,date:"2026-03-31",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:5,count:4,notes:"",photo:null},
-    {id:41,date:"2026-03-31",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:62,count:1,notes:"",photo:null},
-    {id:42,date:"2026-03-31",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:24,count:4,notes:"",photo:null},
-    {id:43,date:"2026-03-31",crop:"strawberry",variety:"Festival",bed:"Oval",weight:20,count:3,notes:"",photo:null},
-    {id:44,date:"2026-04-01",crop:"strawberry",variety:"Festival",bed:"Oval",weight:46,count:6,notes:"",photo:null},
-    {id:1775605149035,date:"2026-04-07",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:20,count:9,notes:"",photo:null},
-    {id:1775605169725,date:"2026-04-07",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",weight:48,count:9,notes:"",photo:null},
-    {id:1775605188676,date:"2026-04-07",crop:"blackberry",variety:"Prime Ark Freedom",bed:"Triangular Bed",weight:48,count:2,notes:"",photo:null},
-    {id:1775649312439,date:"2026-04-08",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",weight:13,count:1,notes:"",photo:null},
-    {id:1775656115464,date:"2026-04-08",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:21,count:1,notes:"",photo:null},
-    {id:1775656138969,date:"2026-04-08",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:89,count:2,notes:"",photo:null},
-    {id:45,date:"2026-04-07",crop:"pepper",variety:"Shishito",bed:"Green Bed",weight:20,count:9,notes:"",photo:null},
-    {id:46,date:"2026-04-07",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",weight:48,count:9,notes:"",photo:null},
-    {id:47,date:"2026-04-07",crop:"blackberry",variety:"Prime Ark Freedom",bed:"Triangular Bed",weight:48,count:2,notes:"",photo:null},
-    {id:48,date:"2026-04-08",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",weight:13,count:1,notes:"",photo:null},
-    {id:49,date:"2026-04-08",crop:"raddish",variety:"French B",bed:"Tomato Bed",weight:21,count:1,notes:"",photo:null},
-    {id:50,date:"2026-04-08",crop:"raddish",variety:"Watermelon",bed:"Green Bed",weight:89,count:2,notes:"",photo:null},
-    {id:1775735437049,date:"2026-04-09",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",weight:44,count:8,notes:"Possible slug damage",photo:null},
-    {id:1775735605159,date:"2026-04-09",crop:"blackberry",variety:"Prime Ark Freedom",bed:"Triangular Bed",weight:8,count:1,notes:"",photo:null},
-    {id:1775735632299,date:"2026-04-09",crop:"cucumber",variety:"Merlin",bed:"Green Bed",weight:72,count:1,notes:"",photo:null},
-    {id:1775735661857,date:"2026-04-09",crop:"pepper",variety:"Shishito",bed:"Apartment",weight:6,count:2,notes:"",photo:null}
-  ];
+  harvests = [];
   saveHarvests();
 }
 
 function seedCare() {
-  careLog = [
-    {id:3,date:"2026-04-08",type:"spray-spinosad",product:"Spinosad",plants:"All tomatoes",notes:"Second broad mite application — as-needed",photo:null,nextDate:null,intervalDays:null,appNum:null,appTotal:null},
-    {id:2,date:"2026-04-08",type:"spray-bt",product:"BT Thuracide",plants:"All beds",notes:"Applied with spinosad",photo:null,nextDate:null,intervalDays:null,appNum:null,appTotal:null},
-    {id:1,date:"2026-04-08",type:"spray-copper",product:"Peyton 35 Copper",plants:"All citrus & beds",notes:"Monthly copper application",photo:null,nextDate:"2026-05-08",intervalDays:30,appNum:null,appTotal:null},
-    {id:1775087075812,date:"2026-04-01",type:"spray-spinosad",product:"Spinosad",plants:"All tomatoes",notes:"Broad mite treatment — as-needed",photo:null,nextDate:null,intervalDays:null,appNum:null,appTotal:null}
-  ];
+  careLog = [];
   saveCare();
 }
 
 function seedPlants() {
-  plantLog = [
-    {id:"t1",crop:"tomato",variety:"Early Girl",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t2",crop:"tomato",variety:"Barry\'s Crazy Cherry",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t3",crop:"tomato",variety:"Red Snapper",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t4",crop:"tomato",variety:"Hossinator",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t5",crop:"tomato",variety:"Lemon Boy",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t6",crop:"tomato",variety:"Mushroom Basket",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t7",crop:"tomato",variety:"Sungold",bed:"Tomato Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t8",crop:"tomato",variety:"Norfolk Purple",bed:"Tomato Bed",count:2,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t9",crop:"pepper",variety:"Jalapeño",bed:"Tomato Bed",count:1,seedDate:"",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t10",crop:"pepper",variety:"Banana Pepper",bed:"Tomato Bed",count:1,seedDate:"",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"t11",crop:"radish",variety:"French Breakfast",bed:"Tomato Bed",count:1,seedDate:"2026-01-20",transplantDate:"",status:"harvesting",notes:""},
-    {id:"t12",crop:"basil",variety:"Genovese",bed:"Tomato Bed",count:4,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"harvesting",notes:""},
-    {id:"g1",crop:"tomato",variety:"Super Sweet 100",bed:"Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"g2",crop:"tomato",variety:"Sungold",bed:"Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"g3",crop:"pepper",variety:"Fatali",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
-    {id:"g4",crop:"pepper",variety:"Scotch Bonnet",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
-    {id:"g5",crop:"pepper",variety:"Ahi Chincha",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
-    {id:"g6",crop:"pepper",variety:"Shishito",bed:"Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"harvesting",notes:"Overwintered"},
-    {id:"g7",crop:"cucumber",variety:"Merlin",bed:"Green Bed",count:3,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
-    {id:"g8",crop:"cucumber",variety:"Beit Alpha",bed:"Green Bed",count:1,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
-    {id:"g9",crop:"radish",variety:"Watermelon",bed:"Green Bed",count:1,seedDate:"2026-01-20",transplantDate:"",status:"harvesting",notes:""},
-    {id:"s1",crop:"tomato",variety:"Lemon Boy",bed:"Square Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"s2",crop:"tomato",variety:"Norfolk Purple",bed:"Square Green Bed",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"s3",crop:"pepper",variety:"Habanero",bed:"Square Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
-    {id:"s4",crop:"pepper",variety:"Serrano",bed:"Square Green Bed",count:1,seedDate:"",transplantDate:"2026-01-10",status:"fruiting",notes:"Overwintered"},
-    {id:"s5",crop:"cucumber",variety:"Merlin",bed:"Square Green Bed",count:1,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
-    {id:"s6",crop:"cucumber",variety:"Beit Alpha",bed:"Square Green Bed",count:1,seedDate:"2026-02-28",transplantDate:"2026-03-15",status:"fruiting",notes:""},
-    {id:"s7",crop:"basil",variety:"Holy Basil",bed:"Square Green Bed",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"harvesting",notes:""},
-    {id:"os1",crop:"strawberry",variety:"Festival",bed:"Oval Strawberry Bed",count:25,seedDate:"",transplantDate:"2025-10-15",status:"harvesting",notes:""},
-    {id:"os2",crop:"onion",variety:"Green Onion",bed:"Oval Strawberry Bed",count:1,seedDate:"2026-02-01",transplantDate:"",status:"harvesting",notes:""},
-    {id:"mp1",crop:"mint",variety:"Mint",bed:"Mint Planter",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
-    {id:"mp2",crop:"tomato",variety:"Super Sweet 100",bed:"Mint Planter",count:1,seedDate:"2026-01-15",transplantDate:"2026-02-20",status:"fruiting",notes:""},
-    {id:"sq1",crop:"strawberry",variety:"Festival",bed:"Square Strawberry Bed",count:20,seedDate:"",transplantDate:"2025-10-15",status:"harvesting",notes:""},
-    {id:"bb1",crop:"blueberry",variety:"Alapaha",bed:"Oval Blueberry Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:""},
-    {id:"bb2",crop:"blueberry",variety:"Ochlockonee",bed:"Oval Blueberry Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:"Fresh transplant"},
-    {id:"bb3",crop:"blueberry",variety:"Legacy",bed:"Oval Blueberry Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"flowering",notes:"Fresh transplant"},
-    {id:"df1",crop:"dragon fruit",variety:"Palora",bed:"Dragon Fruit Planter",count:1,seedDate:"",transplantDate:"2024-01-01",status:"flowering",notes:"Bloomed April 1"},
-    {id:"df2",crop:"dragon fruit",variety:"Haley\'s Comet",bed:"Dragon Fruit Planter",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:"df3",crop:"dragon fruit",variety:"Pink Noid",bed:"New Planter",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:"Pink flesh"},
-    {id:"mn1",crop:"mango",variety:"Carrie",bed:"Mango Planter",count:1,seedDate:"",transplantDate:"2023-01-01",status:"flowering",notes:"31 panicles"},
-    {id:"tri1",crop:"blackberry",variety:"Prime Ark Freedom",bed:"Triangular Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:"tri2",crop:"fig",variety:"LSU Purple",bed:"Triangular Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:"h1",crop:"passionfruit",variety:"Passionfruit",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:"h2",crop:"herb",variety:"Thyme",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
-    {id:"h3",crop:"herb",variety:"Sage",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
-    {id:"h4",crop:"herb",variety:"Oregano",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2025-01-01",status:"harvesting",notes:""},
-    {id:"h5",crop:"bean",variety:"Long Bean Red",bed:"Herb Bed",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"fruiting",notes:""},
-    {id:"h6",crop:"bean",variety:"Long Bean Green",bed:"Herb Bed",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"fruiting",notes:""},
-    {id:"h7",crop:"berry",variety:"Mora (Blackberry)",bed:"Herb Bed",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:"h8",crop:"passionfruit",variety:"Passionfruit",bed:"Herb Bed 2",count:1,seedDate:"",transplantDate:"2024-01-01",status:"fruiting",notes:""},
-    {id:"h9",crop:"bean",variety:"Long Bean",bed:"Herb Bed 2",count:1,seedDate:"2026-02-01",transplantDate:"2026-03-01",status:"fruiting",notes:""},
-    {id:"ig1",crop:"fig",variety:"Celeste",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
-    {id:"ig2",crop:"citrus",variety:"Owari Satsuma",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
-    {id:"ig3",crop:"fig",variety:"LSU Tiger",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
-    {id:"ig4",crop:"peach",variety:"Florida King",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"flowering",notes:"Blooming April 2026"},
-    {id:"ig5",crop:"citrus",variety:"Cara Cara",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
-    {id:"ig6",crop:"citrus",variety:"Meyer Lemon",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""},
-    {id:"ig7",crop:"citrus",variety:"Persian Lime",bed:"In Ground",count:1,seedDate:"",transplantDate:"2022-01-01",status:"fruiting",notes:""}
-  ];
+  plantLog = [];
   savePlants();
 }
 
@@ -1684,7 +1578,7 @@ const UNIT_LABELS  = { g: "g", oz: "oz", lb: "lb", kg: "kg" };
 
 function setUnit(u) {
   displayUnit = u;
-  localStorage.setItem("gl-unit", u);
+  localStorage.setItem("gl-demo-unit", u);
   document.querySelectorAll(".unit-selector button").forEach(b => {
     b.classList.toggle("active", b.dataset.unit === u);
   });
@@ -1751,6 +1645,8 @@ function renderDashboard() {
   let ah = "";
   const tStr = todayStr();
   const mc = missingCount();
+  const spOffer = spOfferYear();
+  if (spOffer) ah += `<div class="alert" style="cursor:pointer;background:#e8f0df;border-color:#c5dcb0" onclick="openSeasonPlanner(${spOffer})">📅 Time to plan your ${spOffer} garden — pick crops and lay out the year <b>›</b></div>`;
   if (mc) ah += `<div class="alert alert-warn" style="cursor:pointer" onclick="openMissingModal()">🧩 ${mc} item${mc>1?"s":""} missing details (planting dates, tree ages, beds) — <b>tap to fill in</b></div>`;
   alerts.innerHTML = ah;
 
@@ -1858,7 +1754,7 @@ function quickLog(crop, variety, bed) {
   document.getElementById("h-crop").value = crop;
   updateVarieties();
   setSelectValue("h-variety", variety);
-  setSelectValue("h-bed", bed);
+  if (bed) { hBedTouched = true; setSelectValue("h-bed", bed); } else refreshBedSuggest();
   updateEstimateHint();
   document.getElementById("h-count").focus();
 }
@@ -1968,6 +1864,8 @@ function resetAddForm() {
   const lastH = harvests.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id)[0];
   const hc = document.getElementById("h-crop");
   hc.value = lastH && getCropKeys().includes(lastH.crop) ? lastH.crop : (hc.options[0]||{}).value || "";
+  hBedTouched = false;
+  renderWunit();
   document.getElementById("h-weight").value="";
   document.getElementById("h-count").value="";
   document.getElementById("h-notes").value="";
@@ -1986,7 +1884,7 @@ function resetAddForm() {
   document.getElementById("p-status").value="planned";
   document.getElementById("p-notes").value="";
   updateVarieties(); updatePlantVarieties(); updateCareTimer(true);
-  if (lastH) { setSelectValue("h-variety", lastH.variety); setSelectValue("h-bed", lastH.bed); }
+  if (lastH) { setSelectValue("h-variety", lastH.variety); refreshBedSuggest(); if (!suggestHarvestBeds(lastH.crop, lastH.variety, today.slice(0,4)).length) setSelectValue("h-bed", lastH.bed); }
   updateEstimateHint();
   setAddType("harvest");
 }
@@ -1996,6 +1894,7 @@ function cancelAdd() { showView("log", document.querySelectorAll(".nav-btn")[1])
 function updateVarieties() {
   const crop = document.getElementById("h-crop").value;
   fillVarietySelect("h-variety", crop);
+  refreshBedSuggest();
   updateEstimateHint();
 }
 
@@ -2027,7 +1926,7 @@ function updateEstimateHint() {
   const c = parseInt(document.getElementById("h-count").value)||0;
   const w = parseFloat(document.getElementById("h-weight").value);
   const avg = avgItemWeight(crop, variety);
-  if (w > 0) { el.textContent = c ? `${fmtItem(toGrams(w)/c)} per item` : ""; return; }
+  if (w > 0) { const conv = getEntryUnit() !== displayUnit ? `= ${fmt(toGrams(w))}` : ""; el.textContent = [conv, c ? `${fmtItem(toGrams(w)/c)} per item` : ""].filter(Boolean).join(" · "); return; }
   if (avg == null) { el.textContent = "No weight? That's fine — counts still go in the log."; return; }
   el.textContent = `Your average: ${fmtItem(avg)} per item` + (c ? ` · ${c} ≈ ${fmt(avg*c)}` : "");
 }
@@ -2089,9 +1988,47 @@ async function handlePhoto(prefix) {
   } catch(e) { toast("⚠️ Couldn't read that photo"); }
 }
 
-// Weight inputs are in the display unit; storage is always grams
-function toGrams(v) { return v / UNIT_FACTORS[displayUnit]; }
-function fromGrams(g) { return +(g * UNIT_FACTORS[displayUnit]).toFixed(displayUnit==="g"?0:3); }
+// Weight inputs are in the weigh-in unit (e.g. grams on the scale); storage is always grams; totals show the display unit
+let entryUnit = null;
+function getEntryUnit() { return entryUnit || localStorage.getItem(LS+"entry-unit") || displayUnit; }
+function toGrams(v) { return v / UNIT_FACTORS[getEntryUnit()]; }
+function fromGrams(g) { const u = getEntryUnit(); return +(g * UNIT_FACTORS[u]).toFixed(u==="g"?0:3); }
+function changeEntryUnit(u) {
+  const el = document.getElementById("h-weight"), w = parseFloat(el.value), g = isFinite(w) && w > 0 ? toGrams(w) : null;
+  entryUnit = u; try { localStorage.setItem(LS+"entry-unit", u); } catch(e) {}
+  if (g != null) el.value = fromGrams(g);
+  updateEstimateHint(); renderWunit();
+}
+// Weigh in any unit (e.g. grams on the scale) while totals keep the display unit
+function renderWunit() {
+  const row = document.getElementById("h-wunit-row"); if (!row) return;
+  const u = getEntryUnit(), w = parseFloat(document.getElementById("h-weight").value);
+  row.innerHTML = `Weighing in ${["g","kg","oz","lb"].map(x => `<span class="chip ${x === u ? "active" : ""}" style="padding:3px 12px" onclick="changeEntryUnit('${x}')">${x}</span>`).join("")}
+    ${u !== displayUnit && !(isFinite(w) && w > 0) ? `<span>totals stay in ${displayUnit}</span>` : ""}`;
+}
+
+// Beds most likely to hold a crop, best first: living plants, then this season's planned plantings, then recent harvests
+let hBedTouched = false;
+function suggestHarvestBeds(crop, variety, year) {
+  const names = beds.map(b => b.name), score = {};
+  const add = (bed, pts, v) => { if (!bed || !names.includes(bed)) return; score[bed] = (score[bed]||0) + pts + (variety && v === variety ? pts/2 : 0); };
+  let pl = plantings; if (!pl.length) { try { pl = JSON.parse(localStorage.getItem(LS+"plantings") || "[]"); } catch(e) { pl = []; } }
+  plantLog.forEach(p => { if (p.crop === crop && p.status !== "died" && p.status !== "removed") add(p.bed, 100, p.variety); });
+  pl.forEach(p => { if (p.crop !== crop) return; const y = String(p.transplantDate || p.sowDate || "").slice(0,4); add(p.bed, !y || y === year ? 50 : 5, p.variety); });
+  harvests.forEach(h => { if (h.crop === crop) add(h.bed, String(h.date).slice(0,4) === year ? 10 : 1, h.variety); });
+  return Object.keys(score).sort((a,b) => score[b] - score[a]);
+}
+// Put suggested beds first (top two marked 🌱) and pick the best one unless the bed was chosen by hand
+function refreshBedSuggest() {
+  const el = document.getElementById("h-bed"); if (!el) return;
+  const crop = document.getElementById("h-crop").value, variety = document.getElementById("h-variety").value;
+  const year = (document.getElementById("h-date").value || todayStr()).slice(0,4);
+  const sug = suggestHarvestBeds(crop, variety, year), cur = el.value;
+  const rest = beds.map(b => b.name).filter(n => !sug.includes(n));
+  el.innerHTML = sug.map((n,i) => `<option value="${esc(n)}">${i < 2 ? "🌱 " : ""}${esc(n)}</option>`).join("")
+    + rest.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("") + "<option value='Other'>Other</option>";
+  if (!hBedTouched && sug.length) el.value = sug[0]; else setSelectValue("h-bed", cur);
+}
 
 function submitHarvest() {
   const wIn = parseFloat(document.getElementById("h-weight").value);
@@ -2204,8 +2141,9 @@ function startEdit(id, type) {
     setSelectValue("h-crop", e.crop);
     updateVarieties();
     setSelectValue("h-variety", e.variety);
+    hBedTouched = true;
     setSelectValue("h-bed", e.bed);
-    document.getElementById("h-weight").value = isWeighed(e) ? fromGrams(e.weight) : "";
+    document.getElementById("h-weight").value = isWeighed(e) ? fromGrams(e.weight) : ""; renderWunit();
     document.getElementById("h-count").value = e.count || "";
     document.getElementById("h-notes").value=e.notes||"";
     showPhoto("h", e.photo);
@@ -2250,15 +2188,15 @@ function confirmDelete() {
 }
 
 // ===================== LOT VIEW =====================
-let lotWidth = parseFloat(localStorage.getItem("gl-lot-width")) || 0;   // 0 = not set
-let lotDepth = parseFloat(localStorage.getItem("gl-lot-depth")) || 0;
+let lotWidth = parseFloat(localStorage.getItem("gl-demo-lot-width")) || 0;   // 0 = not set
+let lotDepth = parseFloat(localStorage.getItem("gl-demo-lot-depth")) || 0;
 
 function saveLotDimensions() {
   const w = parseFloat(document.getElementById("lot-width").value) || 60;
   const d = parseFloat(document.getElementById("lot-depth").value) || 120;
   lotWidth = Math.min(w, d); lotDepth = Math.max(w, d);   // long side always runs up–down on the map
-  localStorage.setItem("gl-lot-width", lotWidth);
-  localStorage.setItem("gl-lot-depth", lotDepth);
+  localStorage.setItem("gl-demo-lot-width", lotWidth);
+  localStorage.setItem("gl-demo-lot-depth", lotDepth);
   drawLotCanvas();
 }
 
@@ -2308,7 +2246,11 @@ function drawLotCanvas() {
     const bhPx = b.l * SCALE;
     const isOval = b.shape === "oval" || b.shape === "container";
     ctx.fillStyle = b.color + "cc";
-    if (isOval) {
+    if (b.shape === "triangle") {
+      const tp = triPoints(triApex(b), bwPx, bhPx);
+      ctx.beginPath(); tp.forEach(([px, py], i) => i ? ctx.lineTo(bxPx + px, byPx + py) : ctx.moveTo(bxPx + px, byPx + py)); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    } else if (isOval) {
       ctx.beginPath();
       ctx.ellipse(bxPx + bwPx/2, byPx + bhPx/2, bwPx/2, bhPx/2, 0, 0, Math.PI*2);
       ctx.fill();
@@ -2403,47 +2345,23 @@ let selectedBedId = null;
 let selectedBedColor = "#1e3a10";
 let dragState = null;
 
-function saveBeds() { try { localStorage.setItem("gl-beds", JSON.stringify(beds)); } catch(e){} }
+function saveBeds() { try { localStorage.setItem("gl-demo-beds", JSON.stringify(beds)); } catch(e){} }
 function seedBeds() {
-  beds = [
-    {id:"str2",name:"Apartment",w:15,l:30,shape:"house",color:"#8a8a8a",x:810,y:18,notes:"Back NE structure"},
-    {id:"str1",name:"House",w:35,l:40,shape:"house",color:"#9a9a9a",x:225,y:864,notes:"Main house"},
-    {id:"b14",name:"Florida King Peach",w:5,l:5,shape:"oval",color:"#c4622d",x:212.25,y:1880.77,notes:"In ground — flowering Apr 2026"},
-    {id:"b15",name:"Celeste Fig",w:5,l:5,shape:"oval",color:"#4a2d6b",x:37.0,y:760.88,notes:"In ground"},
-    {id:"b16",name:"LSU Tiger Fig",w:5,l:5,shape:"oval",color:"#5a3d7b",x:574.12,y:1691.19,notes:"In ground"},
-    {id:"b17",name:"LSU Purple Fig",w:5,l:5,shape:"oval",color:"#3a1d5b",x:518.88,y:466.34,notes:"In ground"},
-    {id:"b21",name:"Persian Lime",w:4,l:4,shape:"oval",color:"#3a6b20",x:213.62,y:2243.69,notes:"In ground"},
-    {id:"b20",name:"Meyer Lemon",w:4,l:4,shape:"oval",color:"#b8a020",x:211.94,y:2103.53,notes:"In ground"},
-    {id:"b18",name:"Owari Satsuma",w:4,l:4,shape:"oval",color:"#c47a2d",x:52.59,y:680.64,notes:"In ground"},
-    {id:"b19",name:"Cara Cara",w:4,l:4,shape:"oval",color:"#c4622d",x:227.31,y:1718.27,notes:"In ground"},
-    {id:"b13",name:"Triangular Bed",w:8,l:4,shape:"rect",color:"#1a5c3a",x:607.88,y:482.37,notes:"Prime Ark Freedom, LSU Purple"},
-    {id:"b08",name:"Dragon Fruit Planter",w:4,l:3,shape:"rect",color:"#6a1a8a",x:783.88,y:647.58,notes:"Palora, Haley\'s Comet"},
-    {id:"b09",name:"New Planter",w:3,l:3,shape:"rect",color:"#7a2a9a",x:775.62,y:567.01,notes:"Pink Noid dragon fruit"},
-    {id:"b10",name:"Mango Planter",w:3,l:3,shape:"rect",color:"#8a5a1a",x:871.94,y:649.61,notes:"Carrie mango"},
-    {id:"b01",name:"Tomato Bed",w:16,l:3,shape:"rect",color:"#2d5016",x:452.88,y:638.56,notes:"16 varieties + jalapeño, banana pepper, basil, radish"},
-    {id:"b02",name:"Green Bed",w:3,l:10,shape:"rect",color:"#3a6b20",x:1026,y:612.5,notes:"Tomatoes, peppers, cukes, radish"},
-    {id:"b03",name:"Square Green Bed",w:4,l:3,shape:"rect",color:"#4a7a32",x:1008,y:869.79,notes:"Mixed veg + holy basil"},
-    {id:"b11",name:"Herb Bed",w:3,l:6,shape:"rect",color:"#5a6b20",x:1006.81,y:947.66,notes:"Passionfruit, herbs, beans, mora"},
-    {id:"b12",name:"Herb Bed 2",w:3,l:6,shape:"rect",color:"#6b7a2a",x:1013.62,y:1100.0,notes:"Passionfruit, long beans"},
-    {id:"b04",name:"Oval Strawberry Bed",w:3,l:6,shape:"oval",color:"#8b2020",x:242.56,y:453.45,notes:"Festival + green onions"},
-    {id:"b05",name:"Square Strawberry",w:3,l:3,shape:"rect",color:"#8b2020",x:273.12,y:618.66,notes:"Festival"},
-    {id:"b06",name:"Oval Blueberry Bed",w:6,l:3,shape:"oval",color:"#1a3a6b",x:25.94,y:445.32,notes:"3 varieties"},
-    {id:"b07",name:"Mint Planter",w:2,l:2,shape:"oval",color:"#5a8a3a",x:1030,y:791.31,notes:"Mint + Super Sweet 100"}
-  ];
+  beds = [];
   saveBeds();
 }
 
 function loadBeds() {
   try {
-    var b = localStorage.getItem("gl-beds");
-    var bv = localStorage.getItem("gl-bed-version");
+    var b = localStorage.getItem("gl-demo-beds");
+    var bv = localStorage.getItem("gl-demo-bed-version");
     if (b && bv === "v5") {
       beds = JSON.parse(b);
       return;
     }
   } catch(e) {}
   seedBeds();
-  try { localStorage.setItem("gl-bed-version", "v5"); } catch(e) {}
+  try { localStorage.setItem("gl-demo-bed-version", "v5"); } catch(e) {}
 }
 
 function rotateBedFromModal() {
@@ -2476,8 +2394,10 @@ function showBedSetup(editId) {
     const b = beds.find(b=>b.id===editId);
     if (!b) return;
     document.getElementById("bed-name").value = b.name;
-    document.getElementById("bed-w").value = b.w;
-    document.getElementById("bed-l").value = b.l;
+    const bd = b.shape === "triangle" ? triBaseDepth(b) : null;   // triangles edit as base × depth
+    document.getElementById("bed-w").value = bd ? bd.base : b.w;
+    document.getElementById("bed-l").value = bd ? bd.depth : b.l;
+    document.getElementById("bed-apex").value = triApex(b);
     document.getElementById("bed-shape").value = b.shape||"rect";
     document.getElementById("bed-notes").value = b.notes||"";
     selectedBedColor = b.color||"#1e3a10";
@@ -2486,12 +2406,20 @@ function showBedSetup(editId) {
     document.getElementById("bed-w").value="";
     document.getElementById("bed-l").value="";
     document.getElementById("bed-shape").value="rect";
+    document.getElementById("bed-apex").value="up";
     document.getElementById("bed-notes").value="";
     selectedBedColor="#1e3a10";
   }
   document.querySelectorAll(".color-swatch").forEach(s=>{
     s.classList.toggle("selected", s.dataset.color===selectedBedColor);
   });
+  bedShapeChanged();
+}
+function bedShapeChanged() {
+  const tri = document.getElementById("bed-shape").value === "triangle";
+  document.getElementById("bed-w-label").textContent = tri ? "Base (ft)" : "Width (ft)";
+  document.getElementById("bed-l-label").textContent = tri ? "Base to point (ft)" : "Length (ft)";
+  document.getElementById("bed-apex-wrap").style.display = tri ? "" : "none";
 }
 
 function closeBedModal() { document.getElementById("bed-modal").classList.remove("open"); refreshBedsTab(); }
@@ -2521,6 +2449,10 @@ function saveBed() {
     x: editId ? beds.find(b=>b.id===editId)?.x||20 : (cw ? Math.round(cw/2-40) : 20),
     y: editId ? beds.find(b=>b.id===editId)?.y||20 : (ch ? Math.round(ch/2-40) : 20),
   };
+  if (entry.shape === "triangle") {   // base × depth → the box on the map, by which way the point faces
+    const apex = document.getElementById("bed-apex").value, base = entry.w, depth = entry.l, across = apex === "up" || apex === "down";
+    Object.assign(entry, { apex, w: across ? base : depth, l: across ? depth : base });
+  }
   if (editId) {
     // Harvests and plants reference beds by name — carry a rename through to them
     const old = beds.find(b=>b.id===editId);
@@ -2556,8 +2488,7 @@ window.rotBed = function(id) {
   if (idx < 0) { toast("Bed not found"); return; }
   var b = beds[idx];
   var newW = b.l, newL = b.w;
-  beds[idx] = { id:b.id, name:b.name, w:newW, l:newL, shape:b.shape,
-    color:b.color, x:b.x, y:b.y, notes:b.notes };
+  beds[idx] = Object.assign({}, b, { w:newW, l:newL }, b.shape === "triangle" ? { apex: APEX_NEXT[triApex(b)] } : {});
   saveBeds();
   renderMap();
   setTimeout(fitCanvasToBeds, 80);
@@ -2610,7 +2541,8 @@ function renderMap() {
     var weightDiv = total ? '<div class="map-bed-weight">'+fmt(total)+'</div>' : "";
     var div = '<div class="map-bed '+(isSel?"selected":"")+'" id="mapbed-'+b.id+'" data-id="'+b.id+'"';
     div += ' style="left:'+zx+'px;top:'+zy+'px;width:'+zpw+'px;height:'+zph+'px;';
-    div += 'background:'+b.color+';border-radius:'+br+';font-size:'+zfs+'px;'+selStyle+'"';
+    var triClip = b.shape==="triangle" ? 'clip-path:polygon('+triPoints(triApex(b),100,100).map(function(p){return p[0]+'% '+p[1]+'%';}).join(',')+');border:none;' : '';
+    div += 'background:'+b.color+';border-radius:'+br+';font-size:'+zfs+'px;'+selStyle+triClip+(isSel&&triClip?'filter:brightness(1.25);':'')+'"';
     div += '>';  // drag/tap handled by setupDrag (inline handlers caused double toggling)
     div += '<div class="map-bed-label">'+esc(b.name)+(zpw>70&&zph>40?'<div style="font-weight:normal;opacity:.8">'+b.w+'×'+b.l+' ft</div>':'')+'</div>';
     div += '<div class="map-bed-crops">'+plants+'</div>';
@@ -3176,17 +3108,51 @@ function cropWindows(key, year) {
 }
 function fmtWin(w) { return MONTH_SHORT[w[0].getMonth()] + " " + w[0].getDate() + "–" + (w[0].getMonth()===w[1].getMonth() ? "" : MONTH_SHORT[w[1].getMonth()] + " ") + w[1].getDate(); }
 
+// ── Bed shapes: triangles are drawn in their w × l box with the point facing up/right/down/left ──
+const APEX_NEXT = { up:"right", right:"down", down:"left", left:"up" };
+function triApex(b) { return ["up","right","down","left"].includes(b && b.apex) ? b.apex : "up"; }
+function triPoints(apex, w, h) {
+  if (apex === "down") return [[0,0],[w,0],[w/2,h]];
+  if (apex === "left") return [[w,0],[w,h],[0,h/2]];
+  if (apex === "right") return [[0,0],[0,h],[w,h/2]];
+  return [[0,h],[w,h],[w/2,0]];
+}
+function triBaseDepth(b) { const a = triApex(b); return a === "up" || a === "down" ? { base:b.w, depth:b.l } : { base:b.l, depth:b.w }; }
+// Is a circle of radius r (inches) at x, y (inches from the bed's top-left) inside the bed?
+function insideBed(b, x, y, r) {
+  const W = b.w * 12, L = b.l * 12, e = 0.01;
+  if (x - r < -e || y - r < -e || x + r > W + e || y + r > L + e) return false;
+  if (b.shape === "oval" || b.shape === "container") { const a = W/2 - r, c = L/2 - r; return a > 0 && c > 0 ? ((x - W/2)/a)**2 + ((y - L/2)/c)**2 <= 1 + e : Math.hypot(x - W/2, y - L/2) < 1; }
+  if (b.shape === "triangle") {
+    const pts = triPoints(triApex(b), W, L);
+    for (let i = 0; i < 3; i++) {
+      const [x1,y1] = pts[i], [x2,y2] = pts[(i+1)%3], [x3,y3] = pts[(i+2)%3], len = Math.hypot(x2-x1, y2-y1);
+      const cross = (px, py) => ((x2-x1)*(py-y1) - (y2-y1)*(px-x1)) / len, side = Math.sign(cross(x3,y3)) || 1;
+      if (cross(x, y) * side < r - e) return false;
+    }
+  }
+  return true;
+}
+// SVG outline of a bed in display space (P maps bed inches to display; dw × dh is the drawn box)
+function bedShapeSvg(b, P, dw, dh, attrs) {
+  if (b.shape === "triangle") return `<polygon points="${triPoints(triApex(b), b.w*12, b.l*12).map(([x,y]) => P(x,y).join(",")).join(" ")}" stroke-linejoin="round" ${attrs}/>`;
+  if (b.shape === "oval" || b.shape === "container") return `<ellipse cx="${dw/2}" cy="${dh/2}" rx="${dw/2}" ry="${dh/2}" ${attrs}/>`;
+  return `<rect width="${dw}" height="${dh}" rx="2" ${attrs}/>`;
+}
+const bedAreaSqIn = b => b.w * b.l * 144 * (b.shape === "oval" || b.shape === "container" ? Math.PI/4 : b.shape === "triangle" ? 0.5 : 1);
+
 // ── BED FIT (spacing) ──
 function bedCapacity(bed, sp) {
   if (!bed || !sp || bed.shape === "house") return null;
   const wIn = bed.w * 12, lIn = bed.l * 12;
+  if (bed.shape === "triangle") return Math.max(Math.min(wIn, lIn) >= sp ? 1 : 0, Math.floor(0.5 * wIn * lIn / (sp*sp) * 0.85));
   if (bed.shape === "oval" || bed.shape === "container") return Math.max(bed.shape === "container" ? 1 : 0, Math.floor(Math.PI/4 * wIn * lIn / (sp*sp)));
   return Math.floor(wIn / sp) * Math.floor(lIn / sp) || (Math.min(wIn, lIn) >= sp*0.75 ? 1 : 0);
 }
 // Share of the bed (0–1) used by other plantings/plants overlapping [from, to]
 function bedUsedShare(bedName, from, to, exceptId) {
   const bed = beds.find(b => b.name === bedName); if (!bed) return 0;
-  const area = bed.w * bed.l * 144 * (bed.shape === "oval" ? Math.PI/4 : 1);
+  const area = bedAreaSqIn(bed);
   let used = 0;
   const overlaps = (a1, a2) => !(a2 < from || a1 > to);
   plantings.forEach(p => {
@@ -3330,7 +3296,7 @@ function getAgenda(horizonDays) {
   return items.sort((a,b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
 }
 
-function careIcon(type) { type = type||""; return type.startsWith("spray") ? "💧" : type.startsWith("fert") ? "🌿" : type === "water" ? "🚿" : "🔧"; }
+function careIcon(type) { type = type||""; return type.startsWith("spray") ? "💧" : type.startsWith("fert") ? "🌿" : type === "water" ? "🚿" : type === "mulch" || type === "weed" ? "🍂" : "🔧"; }
 
 // The ordered steps of a planned planting, each with its date and state
 function planSteps(p) {
@@ -3444,8 +3410,314 @@ function renderPlan() {
   if (planTab === "agenda") renderAgenda();
   else if (planTab === "plantings") renderPlantings();
   else if (planTab === "programs") renderPrograms();
+  else if (planTab === "season") renderSeason();
   else renderWindows();
 }
+
+// ===================== SEASON PLANNER =====================
+// Pick crops for the year, place plantings on a calendar, then fill gaps in the harvest
+const HARVEST_WEEKS = { tomato:10, pepper:14, eggplant:12, cucumber:6, okra:14, squash:6, pumpkin:2, corn:2, "sweet corn":2,
+  watermelon:4, cantaloupe:4, beans:4, "long bean":8, "southern peas":6, "sweet potato":2, potato:2, raddish:2,
+  carrot:4, beet:4, turnip:4, onion:3, garlic:2, lettuce:5, spinach:5, arugula:4, kale:12, collards:14,
+  "mustard greens":6, "bok choy":3, "swiss chard":16, broccoli:5, cauliflower:2, cabbage:3, "brussels sprouts":8,
+  peas:4, basil:12, cilantro:4, dill:6, parsley:20, sunflower:3 };
+const SUCCESSION_WEEKS = { beans:3, lettuce:3, raddish:2, cilantro:3, "sweet corn":3, corn:3, cucumber:4, squash:5, carrot:3, beet:3,
+  arugula:3, "bok choy":3, spinach:3, "southern peas":4, peas:3, turnip:4, "mustard greens":4, dill:4 };
+const SP_HERBS = ["basil","cilantro","dill","parsley","chives","mint","thyme","oregano","sage","rosemary","lemongrass"];
+let spYear = null, spStep = "crops", spChosen = null, spAdd = null, spGoals = ["steady"];
+
+function spLoad(k, def) { try { return JSON.parse(localStorage.getItem(LS+k) || "null") || def; } catch(e) { return def; } }
+function spPlans() { return spLoad("season-plans", {}); }
+function spSavePlan(year, plan) { const all = spPlans(); all[String(year)] = plan; localStorage.setItem(LS+"season-plans", JSON.stringify(all)); }
+function spWeeksMap() { return spLoad("harvest-weeks", {}); }
+function spHW(k) { const m = spWeeksMap(); return m[k] || HARVEST_WEEKS[k] || 4; }
+function spSetHW(k, n) { const m = spWeeksMap(); m[k] = Math.max(1, n); localStorage.setItem(LS+"harvest-weeks", JSON.stringify(m)); renderSeason(); }
+function spDefaultMethod(k) { const g = cropGuide(k); if (!g) return "buy"; return g.direct && !g.indoor ? "direct" : g.indoor ? "indoor" : "buy"; }
+function spPlannerCrops() {
+  return cropRegistry.filter(c => { const g = cropGuide(c.key); return g && !g.perennial && g.dtm && (g.tp || g.direct || g.fallOnly); })
+    .map(c => Object.assign({}, c, { group: SP_HERBS.includes(c.key) ? "herb" : cropGuide(c.key).frost === "tender" ? "warm" : "cool" }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+const spCellOf = d => d.getMonth() * 2 + (d.getDate() > 15 ? 1 : 0);
+const spCellLabel = i => (i % 2 ? "late " : "early ") + MONTH_SHORT[Math.floor(i / 2)];
+const spCellStart = (y, i) => new Date(y, Math.floor(i / 2), i % 2 ? 16 : 1);
+function spCellsIn(a, b, y) {
+  const out = [];
+  for (let i = 0; i < 24; i++) { const s = spCellStart(y, i), e = i === 23 ? new Date(y, 11, 31) : new Date(spCellStart(y, i + 1) - 864e5); if (b >= s && a <= e) out.push(i); }
+  return out;
+}
+function spSpan(p) {
+  const base = p.method === "direct" ? p.sowDate : p.transplantDate, dtm = p.dtm || (cropGuide(p.crop) || {}).dtm;
+  if (!base || !dtm) return null;
+  const s = addDays(base, dtm); return [s, addDays(s, spHW(p.crop) * 7)];
+}
+const spPlantingYear = p => String((p.method === "direct" ? p.sowDate : p.transplantDate || p.sowDate) || "").slice(0, 4);
+function spCoverage(list, y) {
+  const counts = Array(24).fill(0), sets = Array.from({ length: 24 }, () => new Set());
+  list.forEach(p => { const sp = spSpan(p); if (!sp) return; spCellsIn(parseLocalDate(sp[0]), parseLocalDate(sp[1]), y).forEach(i => { if (!sets[i].has(p.crop)) { sets[i].add(p.crop); counts[i]++; } }); });
+  return counts;
+}
+function spPossible(keys, y) { const s = new Set(); keys.forEach(k => { const w = cropWindows(k, y); if (w) w.harvest.forEach(h => spCellsIn(h[0], h[1], y).forEach(i => s.add(i))); }); return s; }
+function spGaps(counts, possible) {
+  if (!counts.some(n => n)) return [];
+  const out = [];
+  for (let i = 0; i < 24; i++) { if (counts[i] || !possible.has(i)) continue; const s = i; while (i + 1 < 24 && !counts[i + 1] && possible.has(i + 1)) i++; out.push([s, i]); }
+  return out;
+}
+function spOptions(k, y) {
+  const w = cropWindows(k, y); if (!w) return [];
+  const dm = spDefaultMethod(k), out = [], season = x => x[0].getMonth() >= 6 ? "Fall" : "Spring";
+  if (dm !== "direct" || !w.direct.length) w.tp.forEach(x => out.push({ label: season(x) + " transplant", method: dm === "indoor" ? "indoor" : "buy", win: x }));
+  w.direct.forEach(x => out.push({ label: season(x) + " sow", method: "direct", win: x }));
+  return out.sort((a, b) => a.win[0] - b.win[0]);
+}
+function spMake(crop, method, date, every, times) {
+  const dtm = (cropGuide(crop) || {}).dtm || null, ind = guideIndoorDays(cropGuide(crop)) || 42, n = Math.max(1, times), id0 = Math.max(Date.now(), (spMake.last || 0) + 1); spMake.last = id0 + n - 1;
+  for (let i = 0; i < n; i++) {
+    const d = addDays(date, i * every * 7);
+    plantings.push({ id: id0 + i, crop, variety: "", bed: "", qty: null, seeds: null, spacing: (cropGuide(crop) || {}).sp || null, method,
+      sowDate: method === "direct" ? d : method === "indoor" ? addDays(d, -ind) : "", transplantDate: method === "direct" ? "" : d,
+      dtm, notes: n > 1 ? `Succession ${i + 1} of ${n}` : "", season: true });
+  }
+  savePlantings();
+}
+// Planning goals — what the gardener wants most from the season (one or two; first is the main one)
+const SP_GOALS = [
+  { key: "steady", icon: "🔄", title: "Steady harvest", sub: "Something to pick all season — repeat sowings and crops that fill the gaps." },
+  { key: "max", icon: "📦", title: "Biggest harvest", sub: "The most food from your space — heavy producers and long-picking plants." },
+  { key: "focus", icon: "🎯", title: "A few favorites", sub: "Fewer crops, more of each — your best producers." },
+  { key: "easy", icon: "😌", title: "Low effort", sub: "Forgiving, reliable crops that don’t need much fuss." },
+  { key: "preserve", icon: "🫙", title: "Preserving", sub: "Big batches that ripen together — sauce, pickles, freezing, canning." },
+  { key: "yearround", icon: "🗓️", title: "Eat from it year-round", sub: "Lean on fall and winter crops so there’s something to pick every month." },
+  { key: "heat", icon: "🔥", title: "Beat the heat", sub: "Crops that keep going through midsummer, with heat-shy crops moved to spring and fall." },
+  { key: "small", icon: "🪴", title: "Small space", sub: "Compact and vertical crops that give the most per square foot." },
+  { key: "save", icon: "💵", title: "Save money", sub: "Crops that cost a lot to buy and little to grow; skip the cheap staples." },
+  { key: "new", icon: "🧪", title: "Try something new", sub: "Mix in a few crops you haven’t grown before." },
+  { key: "kids", icon: "🧒", title: "Kid-friendly", sub: "Fast, fun, easy to pick — quick wins for young gardeners." },
+  { key: "pollinator", icon: "🐝", title: "Pollinators & soil", sub: "Flowering herbs, sunflowers and legumes; rest gaps with cover crops." },
+];
+const SP_GOAL_CROPS = {
+  max: ["tomato","pepper","okra","swiss chard","collards","eggplant","long bean","kale","cucumber","squash","beans","southern peas","sweet potato","potato","lettuce","basil"],
+  easy: ["okra","southern peas","sweet potato","beans","swiss chard","collards","kale","raddish","lettuce","arugula","mustard greens","basil","pepper","garlic","onion","parsley","dill"],
+  preserve: ["tomato","cucumber","pepper","beans","okra","southern peas","sweet corn","beet","cabbage","garlic","onion","basil","dill"],
+  yearround: ["collards","kale","swiss chard","lettuce","spinach","carrot","mustard greens","bok choy","turnip","beet","arugula","onion","garlic","parsley","cilantro","okra","southern peas","pepper","sweet potato"],
+  heat: ["okra","southern peas","sweet potato","long bean","pepper","eggplant","basil","watermelon","collards","swiss chard"],
+  small: ["pepper","tomato","beans","long bean","cucumber","lettuce","arugula","spinach","swiss chard","kale","bok choy","raddish","basil","parsley","cilantro","peas"],
+  save: ["basil","cilantro","parsley","dill","lettuce","arugula","spinach","tomato","pepper","swiss chard","kale","garlic","peas","beans"],
+  kids: ["raddish","beans","sunflower","peas","cucumber","tomato","pumpkin","carrot","sweet corn","lettuce"],
+  pollinator: ["sunflower","basil","dill","cilantro","parsley","squash","cucumber","southern peas","beans","peas","pumpkin"],
+};
+const SP_PICK = { steady: 12, max: 12, focus: 4, easy: 8, preserve: 6, yearround: 12, heat: 8, small: 8, save: 10, new: 8, kids: 8, pollinator: 10 };
+function spGoalInfo(g) { return SP_GOALS.find(x => x.key === g) || SP_GOALS[0]; }
+function spParseGoals(v) { const l = [...new Set(String(v || "").split(",").map(x => x.trim()).filter(x => SP_GOALS.some(g => g.key === x)))].slice(0, 2); return l.length ? l : ["steady"]; }
+function spGoalsTitle(gs, plain) { return gs.map(g => plain ? spGoalInfo(g).title : spGoalInfo(g).icon + " " + spGoalInfo(g).title).join(" + "); }
+function spDefaultGoals() { return spParseGoals(localStorage.getItem(LS+"plan-goal")); }
+function spOneGoalCrops(goal, keys, last, grown) {
+  if (goal === "focus") { const top = [...last.entries()].filter(([k]) => keys.includes(k)).sort((a, b) => b[1] - a[1]).map(([k]) => k); return top.length ? top : keys.filter(k => ["tomato","pepper","cucumber","beans"].includes(k)); }
+  if (goal === "steady") return keys.filter(k => spHW(k) >= 8 || SUCCESSION_WEEKS[k]);
+  if (goal === "new") { const mine = [...last.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k).filter(k => keys.includes(k)); return [...keys.filter(k => !grown.has(k)).slice(0, 4), ...mine.slice(0, 4)]; }
+  return (SP_GOAL_CROPS[goal] || []).filter(k => keys.includes(k));
+}
+function spGoalCrops(gs, keys, last) {
+  const grown = new Set([...plantings.map(p => p.crop), ...harvests.map(h => h.crop)]);
+  const lists = gs.map(g => spOneGoalCrops(g, keys, last, grown));
+  const out = lists.length > 1 ? [...lists[0].filter(k => lists[1].includes(k)), ...lists[0], ...lists[1]] : lists[0];
+  return [...new Set(out)].slice(0, Math.min(...gs.map(g => SP_PICK[g])));
+}
+function spGoalSuccession(gs, k) {
+  const sw = SUCCESSION_WEEKS[k]; if (!sw || gs.includes("preserve")) return { every: 0, times: 3 };
+  const g = gs[0];
+  if (g === "steady" || g === "yearround") return { every: sw, times: 4 };
+  if (["max","small","save","heat"].includes(g)) return { every: sw, times: 3 };
+  if (g === "focus") return { every: 2, times: 2 };
+  if (gs.includes("steady") || gs.includes("yearround")) return { every: sw, times: 3 };
+  return { every: 0, times: 3 };
+}
+function spGapNote(gs) {
+  if (gs.includes("pollinator")) return "Gaps are a good time for a cover crop (crimson clover or cowpeas in warm months, winter rye or clover in cool) to feed the soil and the bees.";
+  if (gs.every(g => ["focus","easy","preserve","new","kids"].includes(g))) return "Gaps are fine for this goal — fill them only if you want something to pick then.";
+  return "";
+}
+// A starting calendar: first spring planting per crop (plus fall for cool crops, or every crop for long-season goals), repeat sowings kept inside the window
+function spAutoPlan(keys, gs, y) {
+  const fallAll = gs.some(g => ["steady","yearround","heat"].includes(g));
+  keys.forEach(k => {
+    const opts = spOptions(k, y); if (!opts.length) return;
+    const pickOne = l => l.find(o => o.method === "direct") || l[0];
+    const spring = opts.filter(o => o.win[0].getMonth() < 6), fall = opts.filter(o => o.win[0].getMonth() >= 6);
+    const chosen = [pickOne(spring), (cropGuide(k) || {}).frost !== "tender" || fallAll ? pickOne(fall) : null].filter(Boolean);
+    if (!chosen.length) chosen.push(opts[0]);
+    chosen.forEach(o => {
+      const span = (o.win[1] - o.win[0]) / 864e5, start = new Date(+o.win[0] + Math.min(7, span / 3) * 864e5);
+      const s = spGoalSuccession(gs, k);
+      const fit = s.every ? Math.max(1, Math.min(s.times, Math.floor((o.win[1] - start) / 864e5 / (s.every * 7)) + 1)) : 1;
+      spMake(k, o.method, localDateStr(start), s.every, fit);
+    });
+  });
+}
+function spToggleGoalIn(gs, x) { return gs.includes(x) ? (gs.length > 1 ? gs.filter(y => y !== x) : gs) : gs.length < 2 ? [...gs, x] : [gs[0], x]; }
+function spSetGoal(g) { spGoals = spToggleGoalIn(spGoals, g); localStorage.setItem(LS+"plan-goal", spGoals.join(",")); spPersist(); renderSeason(); }
+function spPickForGoal() { spChosen = new Set(spGoalCrops(spGoals, spPlannerCrops().map(o => o.key), spLastYear(spYear))); spPersist(); renderSeason(); }
+function spBuildCalendar(keys) { spAutoPlan(keys, spGoals, spYear); toast("✓ Calendar filled in — adjust any row"); renderSeason(); }
+function spNewPlan() { const t = new Date(); openSeasonPlanner(t.getMonth() >= 7 ? t.getFullYear() + 1 : t.getFullYear()); }
+
+function spSuggest(gap, keys, y, prefer) {
+  const gs = spCellStart(y, gap[0]), ge = gap[1] === 23 ? new Date(y, 11, 31) : new Date(spCellStart(y, gap[1] + 1) - 864e5), out = [];
+  keys.forEach(k => {
+    const dtm = (cropGuide(k) || {}).dtm; if (!dtm) return; let best = null;
+    spOptions(k, y).forEach(o => {
+      const lo = new Date(gs - dtm * 864e5 - spHW(k) * 7 * 864e5 + 7 * 864e5), hi = new Date(ge - dtm * 864e5);
+      const a = lo > o.win[0] ? lo : o.win[0], b = hi < o.win[1] ? hi : o.win[1]; if (a > b) return;
+      const fp = new Date(a.getTime() + dtm * 864e5), score = Math.abs(fp - gs) / 864e5 - (prefer.has(k) ? 30 : 0);
+      if (!best || score < best.score) best = { crop: k, method: o.method, date: localDateStr(a), score,
+        label: `${o.method === "direct" ? "Sow" : "Plant out"} ${MONTH_SHORT[a.getMonth()]} ${a.getDate()}–${MONTH_SHORT[b.getMonth()]} ${b.getDate()} · picking from ~${MONTH_SHORT[fp.getMonth()]} ${fp.getDate()}` };
+    });
+    if (best) out.push(best);
+  });
+  return out.sort((x, z) => x.score - z.score).slice(0, 6);
+}
+function spLastYear(y) {
+  const ly = String(y - 1), m = new Map();
+  plantings.forEach(p => { if (spPlantingYear(p) === ly) m.set(p.crop, m.get(p.crop) || 0); });
+  harvests.forEach(h => { if (String(h.date).startsWith(ly)) m.set(h.crop, (m.get(h.crop) || 0) + (h.weight || 0)); });
+  return m;
+}
+function spOfferYear() { const t = new Date(), m = t.getMonth(), y = t.getFullYear(); const target = m >= 10 ? y + 1 : m <= 2 ? y : null; return target != null && !spPlans()[String(target)] ? target : null; }
+function spInitChosen() {
+  const sp = spPlans()[String(spYear)];
+  spChosen = new Set(sp ? sp.crops : [...spLastYear(spYear).keys(), ...plantings.filter(p => spPlantingYear(p) === String(spYear)).map(p => p.crop)]);
+  spGoals = sp && sp.goal ? spParseGoals(sp.goal) : spDefaultGoals();
+}
+function openSeasonPlanner(year) {
+  spYear = year || spOfferYear() || new Date().getFullYear(); spStep = "crops"; spAdd = null; spInitChosen();
+  showView("calendar", [...document.querySelectorAll(".nav-btn")].find(b => /'calendar'/.test(b.getAttribute("onclick")))); setPlanTab("season");
+}
+function spSetYear(y) { spYear = y; spAdd = null; spInitChosen(); renderSeason(); }
+function spGo(step) { spPersist(); spStep = step; spAdd = null; renderSeason(); }
+function spPersist() { const sp = spPlans()[String(spYear)]; spSavePlan(spYear, { crops: [...spChosen], saved: sp && sp.saved, goal: spGoals.join(",") }); }
+function spToggle(k) { spChosen.has(k) ? spChosen.delete(k) : spChosen.add(k); renderSeason(); }
+function spOpenAdd(k) {
+  const opts = spOptions(k, spYear), today = parseLocalDate(todayStr()); let i = opts.findIndex(o => o.win[1] >= today); if (i < 0) i = 0;
+  const gs = spGoalSuccession(spGoals, k);
+  spAdd = { crop: k, opt: i, every: gs.every, times: gs.times, date: opts[i] ? localDateStr(opts[i].win[0] < today && opts[i].win[1] >= today ? today : opts[i].win[0]) : "" };
+  renderSeason();
+}
+function spPickOpt(i) { const o = spOptions(spAdd.crop, spYear)[i], today = parseLocalDate(todayStr()); spAdd.opt = i; spAdd.date = localDateStr(o.win[0] < today && o.win[1] >= today ? today : o.win[0]); renderSeason(); }
+function spConfirmAdd() {
+  const o = spOptions(spAdd.crop, spYear)[spAdd.opt]; const d = document.getElementById("sp-date").value;
+  if (!o || !/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast("Pick a date"); return; }
+  spMake(spAdd.crop, o.method, d, spAdd.every, spAdd.every ? spAdd.times : 1); spAdd = null; toast("✓ Added to your plan"); renderSeason();
+}
+function spRemove(id) {
+  const p = plantings.find(x => String(x.id) === String(id)); if (!p) return;
+  if (!confirm(`Remove ${getCropByKey(p.crop).label}, ${fmtShortDate(p.method === "direct" ? p.sowDate : p.transplantDate)}?`)) return;
+  plantings = plantings.filter(x => x !== p); savePlantings(); renderSeason();
+}
+function spAddSuggestion(k, method, date) { spMake(k, method, date, 0, 1); if (!spChosen.has(k)) { spChosen.add(k); spPersist(); } toast("✓ Added"); renderSeason(); }
+function spFinish() { spSavePlan(spYear, { crops: [...spChosen], saved: todayStr(), goal: spGoals.join(",") }); toast("✓ Season plan saved"); setPlanTab("agenda"); renderDashboard(); }
+
+function spStrip(counts, gapCells) {
+  const shade = n => n <= 0 ? "#f6d9cc" : n === 1 ? "#cfe3bd" : n <= 3 ? "#9cc57c" : "#5f9a3e";
+  const cells = counts.map((n, i) => `<rect x="${i*10+0.5}" y="2" width="9" height="18" rx="1.5" fill="${n ? shade(n) : gapCells.has(i) ? shade(0) : "#f0ede4"}"/>${n ? `<text x="${i*10+5}" y="14" font-size="7" text-anchor="middle" fill="${n>3?"#fff":"#1a1a0e"}">${n}</text>` : ""}`).join("");
+  const now = new Date(), tc = now.getFullYear() === spYear ? `<rect x="${spCellOf(now)*10}" y="0" width="10" height="22" fill="none" stroke="#1a1a0e" stroke-width="0.8"/>` : "";
+  return `<svg viewBox="0 0 240 22" preserveAspectRatio="none" style="width:100%;height:26px;display:block">${cells}${tc}</svg>${spAxis()}
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">${counts.some(n=>n) ? "Numbers = crops picking in each half-month. Pink = a gap with nothing to pick." : "Add plantings to see when you’ll be harvesting."}</div>`;
+}
+function spAxis() { return `<svg viewBox="0 0 240 10" preserveAspectRatio="none" style="width:100%;height:12px;display:block">${MONTH_SHORT.map((m,i)=>`<text x="${i*20+10}" y="8" font-size="7" fill="#7a6e58" text-anchor="middle">${m[0]}</text>`).join("")}</svg>`; }
+
+function spCropRow(k, list) {
+  const c = getCropByKey(k), opts = spOptions(k, spYear), hw = spHW(k), win = new Set();
+  opts.forEach(x => { let i = spCellOf(x.win[0]); const e = spCellOf(x.win[1]); for (let n = 0; n < 24; n++) { win.add(i); if (i === e) break; i = (i + 1) % 24; } });
+  const pos = d => spCellOf(d) * 10 + ((d.getDate() - 1) % 15) / 15 * 10;
+  const bars = list.map((p, j) => { const sp = spSpan(p); if (!sp) return ""; const a = parseLocalDate(sp[0]), b = parseLocalDate(sp[1]);
+    const x0 = a.getFullYear() < spYear ? 0 : pos(a), x1 = b.getFullYear() > spYear ? 240 : pos(b) + 1;
+    const pd = parseLocalDate((p.method === "direct" ? p.sowDate : p.transplantDate) || sp[0]);
+    return `<rect x="${x0}" y="${j%2?6:4}" width="${Math.max(2,x1-x0)}" height="6" rx="2" fill="#4a7a32" opacity="0.85"/>${pd.getFullYear()===spYear?`<circle cx="${pos(pd)}" cy="8" r="2.2" fill="#8a5a1a"/>`:""}`; }).join("");
+  const svg = `<svg viewBox="0 0 240 16" preserveAspectRatio="none" style="width:100%;height:16px;display:block;margin-top:6px"><rect x="0" y="3" width="240" height="10" fill="#f0ede4"/>${[...win].map(i=>`<rect x="${i*10}" y="3" width="10" height="10" fill="#f2dfa8"/>`).join("")}${bars}</svg>`;
+  const chips = list.map(p => { const d = p.method === "direct" ? p.sowDate : p.transplantDate; return `<span class="chip" onclick="spRemove('${jsq(p.id)}')">${p.method === "direct" ? "Sow" : "Plant"} ${fmtShortDate(d)} ✕</span>`; }).join("");
+  let adder = "";
+  if (spAdd && spAdd.crop === k && opts.length) {
+    const o = opts[spAdd.opt], prev = /^\d{4}-\d{2}-\d{2}$/.test(spAdd.date) ? spSpan({ crop: k, method: o.method, sowDate: spAdd.date, transplantDate: spAdd.date }) : null;
+    adder = `<div style="margin-top:10px;padding:10px;background:#e8f0df;border-radius:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${opts.map((x,i)=>`<span class="chip ${i===spAdd.opt?"active":""}" onclick="spPickOpt(${i})">${x.label}</span>`).join("")}</div>
+      <div style="font-size:12px;color:var(--muted2);margin:8px 0 4px">${o.method === "direct" ? "Sow date" : o.method === "indoor" ? "Plant-out date (seed-starting goes on your agenda too)" : "Plant-out date"}</div>
+      <input type="date" id="sp-date" value="${spAdd.date}" onchange="spAdd.date=this.value;renderSeason()">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span class="chip ${!spAdd.every?"active":""}" onclick="spAdd.every=0;renderSeason()">Once</span>
+        ${[2,3,4].map(n=>`<span class="chip ${spAdd.every===n?"active":""}" onclick="spAdd.every=${n};renderSeason()">Every ${n} wks${SUCCESSION_WEEKS[k]===n?" ★":""}</span>`).join("")}</div>
+      ${spAdd.every ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px">How many sowings <button class="btn btn-secondary" style="padding:4px 10px" onclick="spAdd.times=Math.max(2,spAdd.times-1);renderSeason()">−</button><b>${spAdd.times}</b><button class="btn btn-secondary" style="padding:4px 10px" onclick="spAdd.times=Math.min(8,spAdd.times+1);renderSeason()">+</button></div>` : ""}
+      ${prev ? `<div style="font-size:12px;color:var(--green);margin-top:8px">Picking about ${fmtShortDate(prev[0])} – ${fmtShortDate(prev[1])}${spAdd.every ? `, then every ${spAdd.every} weeks after` : ""}</div>` : ""}
+      <button class="btn btn-primary btn-full" style="margin-top:10px" onclick="spConfirmAdd()">${spAdd.every ? `Add ${spAdd.times} plantings` : "Add planting"}</button></div>`;
+  }
+  return `<div style="padding:10px 0;border-top:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div>${c.emoji} ${esc(c.label)}</div>
+      <span class="chip" onclick="${spAdd && spAdd.crop===k ? "spAdd=null;renderSeason()" : `spOpenAdd('${jsq(k)}')`}">${spAdd && spAdd.crop===k ? "Cancel" : "+ Planting"}</span></div>
+    ${svg}
+    <div style="font-size:11px;color:var(--muted)">${opts.length ? opts.map(x=>x.label+" "+fmtWin(x.win)).join(" · ") : "No planting window for your frost dates"}</div>
+    ${chips ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chips}</div>` : ""}${adder}
+    <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--muted)">Each planting picks for about ${hw} wks
+      <span class="chip" style="padding:1px 9px" onclick="spSetHW('${jsq(k)}',${hw-1})">−</span><span class="chip" style="padding:1px 9px" onclick="spSetHW('${jsq(k)}',${hw+1})">+</span></div>
+  </div>`;
+}
+
+function renderSeason() {
+  const el = document.getElementById("plan-season"); if (!el) return;
+  if (!spYear) { spYear = spOfferYear() || new Date().getFullYear(); spInitChosen(); }
+  if (!spChosen) spInitChosen();
+  const y0 = new Date().getFullYear(), options = spPlannerCrops(), last = spLastYear(spYear);
+  const yearPl = plantings.filter(p => spPlantingYear(p) === String(spYear));
+  const planned = [...spChosen].filter(k => options.some(o => o.key === k));
+  const counts = spCoverage(yearPl, spYear), gaps = spGaps(counts, spPossible(options.map(o => o.key), spYear));
+  const gapCells = new Set(gaps.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i)));
+  const fd = getFrostDates();
+  const plans = spPlans(), gTitle = spGoalsTitle(spGoals, true);
+  let h = `<div class="card" style="margin:0 0 10px;background:#e8f0df;border-color:#c5dcb0"><div class="card-title">📅 Season plans</div>
+    ${Object.keys(plans).sort().reverse().map(y => { const p = plans[y]; return `<div onclick="openSeasonPlanner(${y})" style="cursor:pointer;display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #c5dcb0;font-size:13px"><span><b>${y}</b> ${spGoalsTitle(spParseGoals(p.goal))} · ${p.crops.length} crop${p.crops.length===1?"":"s"}${p.saved?"":" · draft"}${String(spYear)===y?" · <i>open</i>":""}</span><b style="color:var(--green)">›</b></div>`; }).join("")}
+    <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="spNewPlan()">＋ New plan for ${new Date().getMonth() >= 7 ? y0 + 1 : y0}</button></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">${[y0, y0+1].map(y=>`<span class="chip ${spYear===y?"active":""}" onclick="spSetYear(${y})">${y}</span>`).join("")}</div>
+    <div class="type-tabs" style="margin-bottom:6px">${[["crops","1 · Crops"],["calendar","2 · Calendar"],["gaps","3 · Gaps"]].map(([v,l])=>`<button class="type-tab ${spStep===v?"active":""}" onclick="spGo('${v}')">${l}</button>`).join("")}</div>`;
+  if (spStep === "crops") {
+    const suggested = spGoalCrops(spGoals, options.map(o => o.key), last);
+    h += `<div class="card" style="margin:10px 0"><div class="card-title">What matters most this year?</div>
+      <div style="font-size:12px;color:var(--muted);margin:-4px 0 8px">Pick one or two.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${SP_GOALS.map(x => `<span class="chip ${spGoals.includes(x.key)?"active":""}" onclick="spSetGoal('${x.key}')">${x.icon} ${x.title}</span>`).join("")}</div>
+      ${spGoals.map(x => `<div style="font-size:12px;margin-top:8px;line-height:1.5"><b>${spGoalInfo(x).icon} ${spGoalInfo(x).title}${spGoals.length > 1 && x === spGoals[0] ? " (main)" : ""}:</b> ${spGoalInfo(x).sub}</div>`).join("")}
+      ${suggested.length ? `<button class="btn btn-secondary btn-full" style="margin-top:4px" onclick="spPickForGoal()">✨ Pick ${suggested.length} crops for “${gTitle}”</button>` : ""}
+      ${spGoals.includes("focus") && planned.length > 5 ? `<div style="font-size:12px;color:#b8741a;margin-top:8px">You’ve picked ${planned.length} — for “A few favorites”, 3–5 crops works best.</div>` : ""}</div>`;
+    h += `<div class="card" style="margin:10px 0">Choose what you want to grow in ${spYear}. ★ = suits your goal. ${last.size ? "Last year’s crops are already ticked." : ""} Windows come from your frost dates (${fmtShortDate(spYear+"-"+fd.last)} / ${fmtShortDate(spYear+"-"+fd.first)}).</div>`;
+    [["warm","☀️ Warm season","Planted after the last frost; most stop at the first fall frost."],["cool","❄️ Cool season","Spring before the heat, and again in fall."],["herb","🌿 Herbs",""]].forEach(([g,t,s]) => {
+      h += `<div class="card" style="margin:10px 0"><div class="card-title">${t}</div>${s?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${s}</div>`:""}
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${options.filter(o=>o.group===g).map(o=>{ const lw = last.get(o.key); return `<span class="chip ${spChosen.has(o.key)?"active":""}" onclick="spToggle('${jsq(o.key)}')">${suggested.includes(o.key) ? "★ " : ""}${o.emoji} ${esc(o.label)}${lw ? " · " + fmt(lw) : last.has(o.key) ? " · last yr" : ""}</span>`; }).join("")}</div></div>`;
+    });
+    h += `<button class="btn btn-primary btn-full" ${planned.length?"":"disabled"} onclick="spGo('calendar')">Next: place ${planned.length} crop${planned.length===1?"":"s"} on the calendar →</button>`;
+  } else if (spStep === "calendar") {
+    const keys = cropRegistry.map(c => c.key).filter(k => planned.includes(k) || yearPl.some(p => p.crop === k));
+    const unplaced = planned.filter(k => !yearPl.some(p => p.crop === k));
+    h += `<div class="card" style="margin:10px 0"><div class="card-title">Harvest coverage</div>${spStrip(counts, gapCells)}</div>
+      ${unplaced.length ? `<div class="card" style="margin:10px 0;background:#e8f0df;border-color:#c5dcb0">${unplaced.length} crop${unplaced.length>1?"s have":" has"} no plantings yet. Fill in a starting calendar for “${gTitle}”${spGoals.includes("preserve") ? ", one big planting per crop so it ripens together" : spGoalSuccession(spGoals, "beans").every ? ", with repeat sowings where they help" : ""} — then adjust any row.
+        <button class="btn btn-primary btn-full" style="margin-top:10px" onclick='spBuildCalendar(${JSON.stringify(unplaced).replace(/'/g,"&#39;")})'>✨ Build my calendar</button></div>` : ""}
+      <div class="card" style="margin:10px 0"><div class="card-title">Your crops</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);margin-bottom:6px"><span><i style="display:inline-block;width:12px;height:8px;background:#f2dfa8"></i> Can plant</span><span><i style="display:inline-block;width:12px;height:6px;border-radius:2px;background:#4a7a32"></i> Picking</span><span><i style="display:inline-block;width:6px;height:6px;border-radius:3px;background:#8a5a1a"></i> Plant date</span></div>
+      ${spAxis()}${keys.length ? keys.map(k => spCropRow(k, yearPl.filter(p => p.crop === k))).join("") : `<div style="font-size:12px;color:var(--muted)">Pick crops in step 1 first.</div>`}</div>
+      <button class="btn btn-primary btn-full" onclick="spGo('gaps')">${gaps.length ? `Next: fill ${gaps.length} gap${gaps.length>1?"s":""} →` : "Next: check for gaps →"}</button>`;
+  } else {
+    h += `<div class="card" style="margin:10px 0"><div class="card-title">Harvest coverage</div>${spStrip(counts, gapCells)}</div>`;
+    if (yearPl.length && gaps.length && spGapNote(spGoals)) h += `<div class="card" style="margin:10px 0">${spGapNote(spGoals)}</div>`;
+    if (!yearPl.length) h += `<div class="card" style="margin:10px 0">Add plantings on the calendar first, then come back to find the gaps.</div>`;
+    else if (!gaps.length) h += `<div class="card" style="margin:10px 0">🎉 Something to pick in every half-month of your growing season.</div>`;
+    else gaps.forEach(g => {
+      const sug = spSuggest(g, options.map(o => o.key), spYear, new Set(planned));
+      h += `<div class="card" style="margin:10px 0"><div class="card-title">Nothing to pick ${g[0]===g[1] ? spCellLabel(g[0]) : spCellLabel(g[0]) + " – " + spCellLabel(g[1])}</div>
+        ${sug.length ? sug.map(s => { const c = getCropByKey(s.crop); return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">
+          <div><div>${c.emoji} ${esc(c.label)}${planned.includes(s.crop)?' <span style="font-size:11px;color:var(--green)">in your plan</span>':""}</div><div style="font-size:12px;color:var(--muted)">${s.label}</div></div>
+          <span class="chip" onclick="spAddSuggestion('${jsq(s.crop)}','${s.method}','${s.date}')">+ Add</span></div>`; }).join("")
+          : `<div style="font-size:12px;color:var(--muted)">Nothing can be planted in time to fill this with your frost dates — a good stretch for cover crops, mulching or a break.</div>`}</div>`;
+    });
+    h += `<button class="btn btn-primary btn-full" onclick="spFinish()">Save plan</button>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin:8px 0 16px">Every planting is now on your Agenda. Assign beds any time from Plantings.</div>`;
+  }
+  el.innerHTML = h;
+}
+
 
 function agendaItemHTML(it, compact) {
   const badge = it.diff < 0 ? `<span class="timer-badge danger">${Math.abs(it.diff)}d late</span>`
@@ -3492,6 +3764,10 @@ function renderAgenda() {
     Add a <b>planting</b> (what, where, when) or a <b>program</b> (a repeating spray or feeding), and the steps show up here when they're due.</div>
     <div class="btn-row" style="margin-top:12px"><button class="btn btn-secondary" style="flex:1" onclick="setPlanTab('plantings');openPlantingModal()">+ Planting</button>
     <button class="btn btn-secondary" style="flex:1" onclick="setPlanTab('programs');openProgramModal()">+ Program</button></div></div>`;
+  const ny = new Date().getMonth() >= 7 ? new Date().getFullYear() + 1 : new Date().getFullYear(), hasPlan = spPlans()[String(ny)];
+  html = `<div class="card" style="margin:10px 0;background:#e8f0df;border-color:#c5dcb0;display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div style="font-size:13px">📅 ${hasPlan ? `Your ${ny} season plan` : `Plan your ${ny} season — crops, calendar, harvest gaps`}</div>
+    <button class="btn btn-primary" style="padding:8px 12px;white-space:nowrap" onclick="${hasPlan ? `openSeasonPlanner(${ny})` : "spNewPlan()"}">${hasPlan ? "Open ›" : "＋ New plan"}</button></div>` + html;
   el.innerHTML = html;
 }
 
@@ -3521,13 +3797,15 @@ function renderPlantings() {
 }
 
 const PROGRAM_PRESETS = [
-  { label:"Fertigation · weekly", name:"Fertigation", type:"fert-soluble", every:7 },
-  { label:"Kelp foliar · 2 wks", name:"Kelp foliar feed", type:"fert-kelp", every:14 },
-  { label:"Copper · monthly", name:"Copper fungicide", type:"spray-copper", every:30 },
-  { label:"Spinosad · 3× weekly", name:"Spinosad course", type:"spray-spinosad", every:7, times:3 },
+  { label:"Liquid feed · 2 wks", name:"Liquid feed", type:"fert-20-20-20", every:14 },
+  { label:"Fish & kelp · 2 wks", name:"Fish & kelp feed", type:"fert-fish", every:14 },
+  { label:"Organic granular · monthly", name:"Organic side-dress", type:"fert-organic-granular", every:30 },
+  { label:"Copper · 10 days (wet spells)", name:"Copper fungicide", type:"spray-copper", every:10 },
+  { label:"Daconil · weekly (wet spells)", name:"Chlorothalonil", type:"spray-chlorothalonil", every:7 },
   { label:"Bt · 3× weekly", name:"Bt course", type:"spray-bt", every:7, times:3 },
-  { label:"Slow-release · 90 days", name:"Slow-release top-up", type:"fert-slow-release", every:90 },
-  { label:"Irrigation check · weekly", name:"Check drip lines", type:"water", every:7 },
+  { label:"Spinosad · 3× weekly", name:"Spinosad course", type:"spray-spinosad", every:7, times:3 },
+  { label:"Compost top-dress · 3 months", name:"Compost top-dress", type:"fert-compost", every:90 },
+  { label:"Drip line check · weekly", name:"Check drip lines", type:"water", every:7 },
 ];
 
 function renderPrograms() {
@@ -3633,8 +3911,10 @@ function openPlantingModal(editId, cropKey, bedName) {
   document.getElementById("pl-sow").value = p ? (p.sowDate||"") : "";
   document.getElementById("pl-tp").value = p ? (p.transplantDate||"") : "";
   document.getElementById("pl-dtm").value = p ? (p.dtm||"") : guideDtm(document.getElementById("pl-crop").value);
-  document.getElementById("pl-repeat").value = "0";
-  document.getElementById("pl-repeat").parentElement.style.display = p ? "none" : "";
+  document.getElementById("pl-succ-wrap").style.display = p ? "none" : "";
+  document.getElementById("pl-rounds").value = "window";
+  plSuccOptions(p ? 0 : null);
+  plNextRoundBox(p);
   document.getElementById("pl-notes").value = p ? (p.notes||"") : "";
   plMethodChanged();
   document.getElementById("planting-modal").classList.add("open");
@@ -3657,7 +3937,91 @@ function plCropChanged() {
   document.getElementById("pl-dtm").value = guideDtm(crop);
   document.getElementById("pl-spacing").value = (cropGuide(crop)||{}).sp || "";
   document.getElementById("pl-method").value = plDefaultMethod(crop);
+  if (!document.getElementById("pl-edit-id").value) { document.getElementById("pl-rounds").value = "window"; plSuccOptions(null); }
   plMethodChanged();
+}
+
+// ── Succession sowing: repeat a planting every N weeks, through the end of the season ──
+const SUCC_TIPS = {
+  raddish: "Radishes are ready in under a month and go woody fast — small sowings every 1–2 weeks keep them coming.",
+  cucumber: "Cucumber vines slow down after 4–6 weeks of picking; a new sowing every 3–4 weeks keeps fresh vines producing.",
+  beans: "Bush beans give one big flush — sow again every 2–3 weeks for a steady supply.",
+  lettuce: "Lettuce bolts in heat; sow a little every 2–3 weeks while the weather is cool.",
+  squash: "Squash bugs and vine borers wear out plants — a fresh sowing every 4–6 weeks keeps you picking.",
+  "sweet corn": "Corn ripens all at once — sow blocks every 2–3 weeks to spread the harvest.",
+  corn: "Corn ripens all at once — sow blocks every 2–3 weeks to spread the harvest.",
+  cilantro: "Cilantro bolts quickly; sow every 2–3 weeks in cool weather.",
+};
+function succTip(k) { return SUCC_TIPS[k] || (SUCCESSION_WEEKS[k] ? `Usually sown again every ${SUCCESSION_WEEKS[k]} weeks for a steady supply.` : ""); }
+// The sowing season holding a date: the planting window, stretched to the last date a planting can still pick before that season's harvest ends
+function succWindow(crop, method, date) {
+  if (!date) return null;
+  const d = parseLocalDate(date), y = d.getFullYear(), dtm = (cropGuide(crop) || {}).dtm || 0;
+  for (const yr of [y - 1, y]) {
+    const w = cropWindows(crop, yr); if (!w) continue;
+    for (const x of method === "direct" ? w.direct : w.tp) {
+      const hw = (w.harvest || []).find(h => h[1] >= x[0]);
+      const late = hw && dtm ? new Date(+hw[1] - dtm * 864e5) : x[1], end = late > x[1] ? late : x[1];
+      if (d >= new Date(+x[0] - 10 * 864e5) && d <= end) return [x[0], end];
+    }
+  }
+  return null;
+}
+function succDates(crop, method, first, every, count) {
+  if (!first || !every) return { dates: first ? [first] : [], end: null };
+  const win = succWindow(crop, method, first), end = win ? localDateStr(win[1]) : null;
+  const max = count === "window" ? (end ? 12 : 3) : Math.max(1, Math.min(12, count)), dates = [];
+  for (let i = 0; i < max; i++) { const d = addDays(first, i * every * 7); if (count === "window" && end && i > 0 && d > end) break; dates.push(d); }
+  return { dates, end };
+}
+function plSuccOptions(force) {
+  const crop = document.getElementById("pl-crop").value, rec = SUCCESSION_WEEKS[crop] || 0, sel = document.getElementById("pl-repeat");
+  sel.innerHTML = `<option value="0">Just once</option>` + [1,2,3,4,6].map(n => `<option value="${n}">Every ${n} wk${n>1?"s":""}${rec===n?" ★":""}</option>`).join("");
+  sel.value = String(force != null ? force : rec);
+  document.getElementById("pl-succ-tip").textContent = succTip(crop);
+  plSuccUpdate();
+}
+function plSucc() {
+  const m = document.getElementById("pl-method").value, crop = document.getElementById("pl-crop").value;
+  const base = m === "direct" ? document.getElementById("pl-sow").value : document.getElementById("pl-tp").value;
+  const every = parseInt(document.getElementById("pl-repeat").value) || 0, rv = document.getElementById("pl-rounds").value;
+  return { base, every, rounds: rv, r: every && base ? succDates(crop, m, base, every, rv === "window" ? "window" : parseInt(rv)) : null };
+}
+function plSuccUpdate() {
+  const el = document.getElementById("pl-succ-preview"); if (!el) return;
+  const { every, rounds, r } = plSucc(), m = document.getElementById("pl-method").value;
+  document.getElementById("pl-rounds").style.display = every ? "" : "none";
+  if (!every) { el.innerHTML = ""; return; }
+  if (!r) { el.innerHTML = `<span style="color:var(--muted)">Set the ${m === "direct" ? "sow" : "plant-out"} date to see the rounds.</span>`; return; }
+  el.innerHTML = `<div style="background:#e8f0df;border-radius:10px;padding:8px 10px"><b>${r.dates.length} round${r.dates.length>1?"s":""}:</b> ${r.dates.map(fmtShortDate).join(" · ")}
+    ${rounds === "window" && r.end ? `<div style="color:var(--muted)">Last sowing that still has time to produce: about ${fmtShortDate(r.end)}</div>` : ""}
+    ${rounds === "window" && !r.end ? `<div style="color:var(--muted)">That date is outside the usual window, so 3 rounds — pick a number to change it.</div>` : ""}
+    <div style="color:var(--muted)">Each round gets its own reminders on the agenda.</div></div>`;
+}
+// On an existing planting of a succession crop: offer the next round(s) if none is planned yet
+function plNextRoundBox(p) {
+  const box = document.getElementById("pl-next-round");
+  if (!p || !SUCCESSION_WEEKS[p.crop]) { box.style.display = "none"; return; }
+  const every = SUCCESSION_WEEKS[p.crop], pBase = (p.method === "direct" ? p.sowDate : p.transplantDate) || "";
+  const bOf = x => (x.method === "direct" ? x.sowDate : x.transplantDate) || "";
+  const later = pBase ? succDates(p.crop, p.method, pBase, every, "window").dates.slice(1) : [];
+  const hasLater = plantings.some(x => x !== p && x.crop === p.crop && bOf(x) > pBase && bOf(x) <= addDays(pBase, every * 7 + 3));
+  if (!later.length || hasLater) { box.style.display = "none"; return; }
+  box.style.display = "";
+  box.innerHTML = `<div style="font-size:12px;line-height:1.5;margin-bottom:8px">🔁 ${esc(succTip(p.crop))}</div>
+    <button class="btn btn-secondary btn-full" onclick="plAddRounds('${jsq(p.id)}',1)">+ Next round ${fmtShortDate(later[0])}</button>
+    ${later.length > 1 ? `<button class="btn btn-secondary btn-full" style="margin-top:6px" onclick="plAddRounds('${jsq(p.id)}',${later.length})">+ ${later.length} rounds, every ${every} wks to ${fmtShortDate(later[later.length-1])}</button>` : ""}`;
+}
+function plAddRounds(id, n) {
+  const p = plantings.find(x => String(x.id) === String(id)); if (!p) return;
+  const every = SUCCESSION_WEEKS[p.crop], pBase = (p.method === "direct" ? p.sowDate : p.transplantDate) || "";
+  const dates = succDates(p.crop, p.method, pBase, every, "window").dates.slice(1, 1 + n), id0 = Date.now();
+  dates.forEach((d, i) => {
+    const off = daysBetween(pBase, d), { done, skipped, snooze, plantId, ...rest } = p;
+    plantings.push(Object.assign({}, rest, { id: id0 + i, sowDate: p.sowDate ? addDays(p.sowDate, off) : "", transplantDate: p.transplantDate ? addDays(p.transplantDate, off) : "",
+      notes: [String(p.notes || "").replace(/\s*·?\s*(Succession|Round) \d+ of \d+/, ""), "Next round"].filter(Boolean).join(" · ") }));
+  });
+  savePlantings(); closeModal("planting-modal"); toast(`✓ Added ${dates.length} round${dates.length > 1 ? "s" : ""}`); refreshPlanViews();
 }
 
 function plMethodChanged() {
@@ -3696,7 +4060,7 @@ function plDatesChanged() {
   const base = m === "direct" ? sow : tpEl.value;
   const dtm = parseInt(document.getElementById("pl-dtm").value);
   document.getElementById("pl-harvest-hint").textContent = base && dtm ? "First harvest around " + fmtShortDate(addDays(base, dtm)) : "";
-  plFitUpdate();
+  plFitUpdate(); plSuccUpdate();
 }
 
 function savePlanting() {
@@ -3720,14 +4084,14 @@ function savePlanting() {
   };
   if (prev) { Object.assign(prev, base); }
   else {
-    const rep = parseInt(document.getElementById("pl-repeat").value) || 0;
-    const n = rep ? 3 : 1;
-    for (let i = 0; i < n; i++) {
-      const off = i * rep * 7;
-      plantings.push(Object.assign({}, base, { id: Date.now() + i,
+    const sc = plSucc(), b0 = m === "direct" ? base.sowDate : base.transplantDate;
+    const dates = sc.r && sc.r.dates.length ? sc.r.dates : [b0], n = dates.length, id0 = Date.now();
+    dates.forEach((d, i) => {
+      const off = daysBetween(b0, d);
+      plantings.push(Object.assign({}, base, { id: id0 + i,
         sowDate: base.sowDate ? addDays(base.sowDate, off) : "", transplantDate: base.transplantDate ? addDays(base.transplantDate, off) : "",
-        notes: n > 1 ? `${base.notes ? base.notes + " · " : ""}Succession ${i+1} of ${n}` : base.notes }));
-    }
+        notes: n > 1 ? `${base.notes ? base.notes + " · " : ""}Round ${i+1} of ${n}` : base.notes }));
+    });
   }
   savePlantings(); closeModal("planting-modal"); toast("✓ Planting saved"); refreshPlanViews();
 }
@@ -3881,7 +4245,7 @@ function fillVarietySelect(id, crop) {
 }
 // When "+ Add a new variety…" is picked, ask for the name and add it to that crop
 function varietySelectChanged(sel, cropSelId) {
-  if (sel.value !== NEW_VARIETY) { if (sel.id === "h-variety") updateEstimateHint(); return; }
+  if (sel.value !== NEW_VARIETY) { if (sel.id === "h-variety") { refreshBedSuggest(); updateEstimateHint(); } return; }
   const crop = document.getElementById(cropSelId).value;
   const name = (prompt("New " + (getCropByKey(crop).label||"crop").toLowerCase() + " variety name:") || "").trim();
   if (name) {
@@ -4608,7 +4972,7 @@ function ensureLayout(items) {
   const W = layoutBed.w * 12, L = layoutBed.l * 12;
   const taken = [];
   items.forEach(it => (it.src.layout || []).forEach(pt => taken.push({ x:pt.x, y:pt.y, r:it.sp/2 })));
-  const free = (x, y, r) => x - r >= -0.01 && y - r >= -0.01 && x + r <= W + 0.01 && y + r <= L + 0.01 && taken.every(t => Math.hypot(t.x - x, t.y - y) >= (t.r + r) * 0.95);
+  const free = (x, y, r) => insideBed(layoutBed, x, y, r) && taken.every(t => Math.hypot(t.x - x, t.y - y) >= (t.r + r) * 0.95);
   let changed = false;
   items.forEach(it => {
     it.src.layout = it.src.layout || [];
@@ -4624,7 +4988,10 @@ function ensureLayout(items) {
     while (it.src.layout.length < it.qty) {
       let spot = null;
       for (let y = r; y <= L - r + 0.01 && !spot; y += Math.max(3, it.sp / 2)) for (let x = r; x <= W - r + 0.01; x += Math.max(3, it.sp / 2)) if (free(x, y, r)) { spot = { x, y }; break; }
-      if (!spot) spot = r * 2 > Math.min(W, L) ? { x: W/2, y: L/2 } : { x: r, y: r };   // wider than the bed: center it; otherwise no room left
+      if (!spot) {   // wider than the bed: center it; otherwise no room left
+        const c = layoutBed.shape === "triangle" ? triPoints(triApex(layoutBed), W, L).reduce((m, p) => ({ x: m.x + p[0]/3, y: m.y + p[1]/3 }), { x:0, y:0 }) : null;
+        spot = c || (r * 2 > Math.min(W, L) ? { x: W/2, y: L/2 } : { x: r, y: r });
+      }
       it.src.layout.push(spot); taken.push({ x:spot.x, y:spot.y, r }); changed = true;
     }
   });
@@ -4679,12 +5046,12 @@ function renderBedLayout() {
   for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) if (Math.hypot(pts[a].x - pts[b].x, pts[a].y - pts[b].y) < (pts[a].r + pts[b].r) * 0.85) { bad.add(pts[a].i + "-" + pts[a].j); bad.add(pts[b].i + "-" + pts[b].j); }
   const pad = 2;
   let svg = `<svg id="bl-svg" viewBox="${-pad} ${-pad} ${dw + pad*2} ${dh + pad*2}" style="width:100%;height:auto;display:block;touch-action:none;user-select:none">
-    <defs><clipPath id="bl-clip"><rect x="0" y="0" width="${dw}" height="${dh}" rx="2"/></clipPath></defs>
-    <rect x="0" y="0" width="${dw}" height="${dh}" fill="#efe6d2" rx="2"/><g clip-path="url(#bl-clip)">`;
+    <defs><clipPath id="bl-clip">${bedShapeSvg(layoutBed, toDisp, dw, dh, "")}</clipPath></defs>
+    ${bedShapeSvg(layoutBed, toDisp, dw, dh, 'fill="#efe6d2"')}<g clip-path="url(#bl-clip)">`;
   for (let g = 12; g < dw; g += 12) svg += `<line x1="${g}" y1="0" x2="${g}" y2="${dh}" stroke="#c8b998" stroke-width="0.3"/>`;
   for (let g = 12; g < dh; g += 12) svg += `<line x1="0" y1="${g}" x2="${dw}" y2="${g}" stroke="#c8b998" stroke-width="0.3"/>`;
   items.forEach((it, i) => { (it.sp <= PATCH_SP ? [0] : it.src.layout.map((_, j) => j)).forEach(j => { svg += layoutGroup(it, i, j, bad.has(i + "-" + j)); }); });
-  svg += `</g><rect x="0" y="0" width="${dw}" height="${dh}" fill="none" stroke="#8a7a4a" stroke-width="0.8" rx="2" pointer-events="none"/></svg>`;
+  svg += `</g>${bedShapeSvg(layoutBed, toDisp, dw, dh, 'fill="none" stroke="#8a7a4a" stroke-width="0.8" pointer-events="none"')}</svg>`;
   const nOver = new Set([...bad].map(k => k.split("-")[0])).size;
   const legend = items.map(it => {
     const c = getCropByKey(it.crop);
@@ -4695,7 +5062,7 @@ function renderBedLayout() {
   }).join("");
   el.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);background:#fff">
-      <div><div style="font-size:17px;color:var(--green)">${esc(layoutBed.name)}</div><div style="font-size:11px;color:var(--muted)">${layoutBed.w}×${layoutBed.l} ft · 1 square = 1 ft · drag to arrange</div></div>
+      <div><div style="font-size:17px;color:var(--green)">${esc(layoutBed.name)}</div><div style="font-size:11px;color:var(--muted)">${layoutBed.shape === "triangle" ? `Triangle, ${triBaseDepth(layoutBed).base} ft base × ${triBaseDepth(layoutBed).depth} ft` : `${layoutBed.w}×${layoutBed.l} ft`} · 1 square = 1 ft · drag to arrange</div></div>
       <button onclick="closeBedLayout()" style="background:none;border:none;font-size:26px;cursor:pointer;color:#7a6e58">×</button></div>
     <div style="padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid var(--border)">
       <input type="date" value="${layoutDate}" onchange="layoutDate=this.value||todayStr();renderBedLayout()" style="font-size:13px;padding:4px">
@@ -4748,8 +5115,8 @@ function bedPreview(bed) {
   const P = (x, y) => swap ? [y, x] : [x, y];
   const oval = bed.shape === "oval" || bed.shape === "container";
   let s = `<svg viewBox="-1 -1 ${dw + 2} ${dh + 2}" style="width:100%;max-height:120px;display:block" preserveAspectRatio="xMidYMid meet">
-    <defs><clipPath id="bp-${esc(bed.id)}">${oval ? `<ellipse cx="${dw/2}" cy="${dh/2}" rx="${dw/2}" ry="${dh/2}"/>` : `<rect width="${dw}" height="${dh}" rx="2"/>`}</clipPath></defs>
-    ${oval ? `<ellipse cx="${dw/2}" cy="${dh/2}" rx="${dw/2}" ry="${dh/2}" fill="#efe6d2"/>` : `<rect width="${dw}" height="${dh}" rx="2" fill="#efe6d2"/>`}
+    <defs><clipPath id="bp-${esc(bed.id)}">${bedShapeSvg(bed, P, dw, dh, "")}</clipPath></defs>
+    ${bedShapeSvg(bed, P, dw, dh, 'fill="#efe6d2"')}
     <g clip-path="url(#bp-${esc(bed.id)})">`;
   for (let g = 12; g < dw; g += 12) s += `<line x1="${g}" y1="0" x2="${g}" y2="${dh}" stroke="#d6c9aa" stroke-width="0.4"/>`;
   for (let g = 12; g < dh; g += 12) s += `<line x1="0" y1="${g}" x2="${dw}" y2="${g}" stroke="#d6c9aa" stroke-width="0.4"/>`;
@@ -4766,7 +5133,7 @@ function bedPreview(bed) {
         <text x="${x}" y="${y}" font-size="${Math.max(3, Math.min(14, it.sp / 2.6))}" text-anchor="middle" dominant-baseline="central">${c.emoji || "🌱"}</text>`;
     });
   });
-  s += `</g>${oval ? `<ellipse cx="${dw/2}" cy="${dh/2}" rx="${dw/2}" ry="${dh/2}" fill="none" stroke="#8a7a4a" stroke-width="0.8"/>` : `<rect width="${dw}" height="${dh}" rx="2" fill="none" stroke="#8a7a4a" stroke-width="0.8"/>`}</svg>`;
+  s += `</g>${bedShapeSvg(bed, P, dw, dh, 'fill="none" stroke="#8a7a4a" stroke-width="0.8"')}</svg>`;
   return { svg: s, items };
 }
 // A "tree spot" is a bed holding a single perennial and no plantings — kept in its own group so veg beds stay easy to scan
@@ -5025,7 +5392,7 @@ function markCareScheduledDone(id) {
 
 // ===================== SETUP WIZARD =====================
 let setupStep = 0;
-const SETUP_STEPS = 10;
+const SETUP_STEPS = 11;
 let setupData = { name:"", gardenName:"", address:"", lat:null, lon:null, zone:"", unit:"g" };
 let setupEditMode = false;
 
@@ -5072,6 +5439,7 @@ function showSetupStep(n) {
   renderSetupDots();
   setupStepShown(n);
   if(n===SETUP_STEPS-1) renderSetupSummary();
+  if(n===9) renderSetupGoals();
   document.getElementById("setup-overlay").scrollTop = 0;
 }
 
@@ -5137,11 +5505,10 @@ async function geocodePlace(q) {
 function prefillZone(lat) {
   const zone = getHardinessZone(lat);
   const zsel = document.getElementById("setup-zone");
-  if (!zsel.value) {
-    const zkey = zone.split("-")[0];
-    for (let i=0;i<zsel.options.length;i++) if (zsel.options[i].value===zkey) { zsel.selectedIndex=i; break; }
-  }
-  document.getElementById("setup-zone-hint").textContent = "Rough guess from latitude: Zone " + zone + " — confirm at planthardiness.ars.usda.gov";
+  const zkey = zone.split("-")[0];
+  for (let i=0;i<zsel.options.length;i++) if (zsel.options[i].value===zkey) { zsel.selectedIndex=i; break; }
+  setupData.zone = zsel.value;
+  document.getElementById("setup-zone-hint").textContent = "Set from latitude: Zone " + zone + " — pick another if yours differs (planthardiness.ars.usda.gov)";
 }
 
 async function detectSetupLocation() {
@@ -5183,7 +5550,7 @@ function setupBedRow(b) {
       <label style="flex:1;display:flex;align-items:center;gap:4px">Width <input class="sb-w" type="number" inputmode="decimal" min="0" step="0.5" value="${b.w || ""}" style="width:100%;font-size:15px;padding:6px"> ft</label>
       <label style="flex:1;display:flex;align-items:center;gap:4px">Length <input class="sb-l" type="number" inputmode="decimal" min="0" step="0.5" value="${b.l || ""}" style="width:100%;font-size:15px;padding:6px"> ft</label></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select class="sb-shape" style="font-size:13px;padding:5px"><option value="rect"${b.shape==="rect"?" selected":""}>Rectangle</option><option value="oval"${b.shape==="oval"?" selected":""}>Round/oval</option><option value="container"${b.shape==="container"?" selected":""}>Container</option><option value="row"${b.shape==="row"?" selected":""}>In-ground row</option></select>
+      <select class="sb-shape" style="font-size:13px;padding:5px"><option value="rect"${b.shape==="rect"?" selected":""}>Rectangle</option><option value="oval"${b.shape==="oval"?" selected":""}>Round/oval</option><option value="triangle"${b.shape==="triangle"?" selected":""}>Triangle (W = base)</option><option value="container"${b.shape==="container"?" selected":""}>Container</option><option value="row"${b.shape==="row"?" selected":""}>In-ground row</option></select>
       ${pre(4,8,"rect","4×8")}${pre(3,6,"rect","3×6")}${pre(4,4,"rect","4×4")}${pre(2,2,"container","pot")}</div>
     <div class="sb-warn" style="font-size:12px;color:var(--red);margin-top:4px"></div></div>`;
 }
@@ -5264,6 +5631,10 @@ function setupSaveGarden() {
   setupData.newBeds = []; setupData.newPerennials = [];
   document.getElementById("setup-beds").innerHTML = ""; document.getElementById("setup-perennials").innerHTML = "";
 }
+function renderSetupGoals() {
+  if (!setupData.goals) setupData.goals = spDefaultGoals();
+  document.getElementById("setup-goals").innerHTML = SP_GOALS.map(x => `<div onclick="setupData.goals=spToggleGoalIn(setupData.goals,'${x.key}');renderSetupGoals()" style="cursor:pointer;padding:12px 14px;margin-bottom:8px;border-radius:12px;background:${setupData.goals.includes(x.key)?"#e8f0df":"#fff"};border:${setupData.goals.includes(x.key)?"2px solid var(--green)":"1px solid var(--border2)"}"><b>${x.icon} ${x.title}</b><div style="font-size:12px;color:#7a6e58;margin-top:2px">${x.sub}</div></div>`).join("");
+}
 function renderSetupSummary() {
   const el = document.getElementById("setup-summary");
   const u = setupData.unit||"g";
@@ -5276,6 +5647,7 @@ function renderSetupSummary() {
     <div>🪴 <b>${(setupData.newBeds||[]).length ? (setupData.newBeds.length + " bed" + (setupData.newBeds.length > 1 ? "s" : "") + " to add") : "No new beds"}</b></div>
     <div>🌳 <b>${(setupData.newPerennials||[]).length ? (setupData.newPerennials.reduce((s,t)=>s+(t.count||1),0) + " trees/bushes to add") : "No trees or bushes added"}</b></div>
     <div>⚖️ <b>${u}</b></div>
+    <div><b>${spGoalsTitle(setupData.goals || spDefaultGoals())}</b></div>
   `;
 }
 
@@ -5287,6 +5659,7 @@ function finishSetup() {
   localStorage.setItem(LS+"garden-name", gardenName);
   localStorage.setItem(LS+"user-name", name);
   localStorage.setItem(LS+"unit", unit);
+  if (setupData.goals) localStorage.setItem(LS+"plan-goal", setupData.goals.join(","));
   localStorage.setItem(LS+"setup-zone", setupData.zone||"");
   localStorage.setItem(LS+"garden-address", setupData.address||"");
   if(setupData.lat != null) { localStorage.setItem(LS+"garden-lat", setupData.lat); localStorage.setItem(LS+"garden-lon", setupData.lon); }
@@ -5938,7 +6311,7 @@ function importAppData(input) {
     let data;
     try { data = JSON.parse(e.target.result); } catch(err) { toast("⚠️ Import failed — not a valid backup file"); return; }
     if (!data || typeof data !== "object") { toast("⚠️ Import failed — not a valid backup file"); return; }
-    // Accept backups from this edition (gl-*) or from the original personal edition (gl-*)
+    // Accept backups from this edition (gl-demo-*) or from the original personal edition (gl-*)
     const out = {};
     Object.keys(data).forEach(k => {
       if (k === "_meta" || typeof data[k] !== "string") return;
@@ -5966,6 +6339,17 @@ function importAppData(input) {
     setTimeout(function() { location.reload(); }, 1200);
   };
   reader.readAsText(file);
+}
+
+// ── START OVER ──
+// Erases only this edition's keys (gl-demo-…); the personal app shares this website's storage and is left alone.
+function startOver() {
+  if (!confirm("Erase all harvests, plants, beds and settings in this app and start setup from scratch? This can't be undone — export a backup first if you want to keep anything.")) return;
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(LS)) keys.push(k); }
+  keys.forEach(k => localStorage.removeItem(k));
+  toast("Erased — starting over…");
+  setTimeout(() => location.reload(), 800);
 }
 
 // ── CSV EXPORT ──
@@ -6006,44 +6390,6 @@ function renderAll() {
   ensureFrostDates().then(changed => { if (changed) renderDashboard(); });   // replace a rough zone estimate with local frost dates
 }
 
-// ── One-time migration from the previous personal build ──
-// Old build kept lot size / setup under gl-demo-* keys and had no saved location.
-(function migratePersonal() {
-  try {
-    [["gl-demo-lot-width","gl-lot-width"],["gl-demo-lot-depth","gl-lot-depth"]].forEach(([from,to]) => {
-      if (!localStorage.getItem(to) && localStorage.getItem(from)) localStorage.setItem(to, localStorage.getItem(from));
-    });
-    if (!localStorage.getItem("gl-setup-done") && localStorage.getItem("gl-harvests")) {
-      localStorage.setItem("gl-setup-done", "1");
-      if (!localStorage.getItem("gl-garden-lat")) {
-        localStorage.setItem("gl-garden-address", "River Ridge, LA");
-        localStorage.setItem("gl-garden-lat", "29.96"); localStorage.setItem("gl-garden-lon", "-90.22");
-      }
-      if (!localStorage.getItem("gl-setup-zone")) localStorage.setItem("gl-setup-zone", "9a");
-      if (!localStorage.getItem("gl-garden-name")) localStorage.setItem("gl-garden-name", "Garden Log");
-    }
-  } catch(e) {}
-})();
-// One-time rename: chile güero harvests and plants were logged as "Anaheim" before Güero was in the pepper list
-(function migrateGuero() {
-  try {
-    if (localStorage.getItem("gl-mig-guero")) return;
-    ["gl-harvests", "gl-plants", "gl-plantings"].forEach(k => {
-      const raw = localStorage.getItem(k); if (!raw) return;
-      const list = JSON.parse(raw); let n = 0;
-      list.forEach(e => { if (e && e.crop === "pepper" && e.variety === "Anaheim") { e.variety = "Güero"; n++; } });
-      if (n) localStorage.setItem(k, JSON.stringify(list));
-    });
-    const reg = JSON.parse(localStorage.getItem("gl-crops") || "null"), pep = reg && reg.find(c => c.key === "pepper");
-    if (pep) { const i = pep.varieties.indexOf("Anaheim"); if (i >= 0) pep.varieties[i] = "Güero"; else if (!pep.varieties.includes("Güero")) pep.varieties.push("Güero"); localStorage.setItem("gl-crops", JSON.stringify(reg)); }
-    const ov = JSON.parse(localStorage.getItem("gl-yield-overrides") || "null");
-    if (ov) { Object.keys(ov).forEach(k => { if (k.endsWith("|pepper|Anaheim")) { ov[k.replace(/Anaheim$/, "Güero")] = ov[k]; delete ov[k]; } }); localStorage.setItem("gl-yield-overrides", JSON.stringify(ov)); }
-    localStorage.setItem("gl-mig-guero", "1");
-  } catch(e) {}
-})();
-lotWidth = parseFloat(localStorage.getItem("gl-lot-width")) || 0;
-lotDepth = parseFloat(localStorage.getItem("gl-lot-depth")) || 0;
-
 // If the app is open in two places (e.g. the installed app and a browser tab), pick up changes saved by the other one
 // so this copy never saves an out-of-date list over them.
 window.addEventListener("storage", e => {
@@ -6054,9 +6400,51 @@ window.addEventListener("storage", e => {
 loadData();
 showSetupIfNeeded();
 
+// Shared plans: a link ending in #add=… carries plantings to merge into this garden (nothing is replaced)
+function parsePlanCode(text) {
+  let t = String(text || "").trim(); const m = t.match(/(?:[?&]d=|#add=)([^&\s]+)/); if (m) t = m[1];
+  if (!t.startsWith("{")) { try { t = decodeURIComponent(t); } catch(e) { return []; } }
+  let data; try { data = JSON.parse(t); } catch(e) { return []; }
+  if (!data || !Array.isArray(data.p)) return [];
+  const ok = d => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  return data.p.flatMap(r => {
+    if (!Array.isArray(r) || typeof r[0] !== "string") return [];
+    const [crop, variety, method, sow, tp, dtm, notes] = r, m2 = ["indoor","direct","buy"].includes(method) ? method : "direct";
+    if ((m2 !== "buy" && !ok(sow)) || (m2 !== "direct" && !ok(tp))) return [];
+    return [{ crop, variety: variety || "", bed: "", qty: null, seeds: null, spacing: (cropGuide(crop) || {}).sp || null, method: m2,
+      sowDate: m2 === "buy" ? "" : sow, transplantDate: m2 === "direct" ? "" : tp, dtm: dtm || null, notes: notes || "" }];
+  });
+}
+function pasteSharedPlan() {
+  const t = prompt("Paste the shared plan link or code:");
+  if (t && t.trim()) importSharedPlan(t);
+}
+function importSharedPlan(text) {
+  const rows = parsePlanCode(text); if (!rows.length) { toast("That isn't a plan link"); return; }
+  const dup = r => plantings.some(x => x.crop === r.crop && (x.variety || "") === r.variety && (x.sowDate || "") === r.sowDate && (x.transplantDate || "") === r.transplantDate);
+  const fresh = rows.filter(r => !dup(r));
+  if (!fresh.length) { toast("Everything in that plan is already in yours"); return; }
+  const lines = fresh.map(r => `• ${r.variety || getCropByKey(r.crop).label} — ${r.method === "indoor" ? "start " + fmtShortDate(r.sowDate) : r.method === "direct" ? "sow " + fmtShortDate(r.sowDate) : "plant " + fmtShortDate(r.transplantDate)}`);
+  if (!confirm(`Add ${fresh.length} planting${fresh.length > 1 ? "s" : ""} to your plan?\n\n${lines.slice(0, 12).join("\n")}${lines.length > 12 ? `\n…and ${lines.length - 12} more` : ""}\n\nNothing in your garden is changed or removed.`)) return;
+  const id0 = Date.now();
+  fresh.forEach((r, i) => {
+    if (r.variety && !getVarieties(r.crop).includes(r.variety)) { const c = cropRegistry.find(c => c.key === r.crop); if (c) { c.varieties.push(r.variety); saveCropRegistry(); } }
+    plantings.push(Object.assign({ id: id0 + i }, r));
+  });
+  savePlantings(); toast(`✓ Added ${fresh.length} plantings`);
+  showView("calendar", [...document.querySelectorAll(".nav-btn")].find(b => /'calendar'/.test(b.getAttribute("onclick")))); setPlanTab("agenda"); refreshPlanViews();
+}
+if (/^#add=/.test(location.hash)) {
+  const h = location.hash; history.replaceState(null, "", location.pathname + location.search);
+  setTimeout(() => { if (localStorage.getItem(LS+"setup-done")) importSharedPlan(h); }, 600);
+}
+
 // Offline support / installable app (service worker only works over https)
 if ("serviceWorker" in navigator && location.protocol === "https:") {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  // Check for a newer version on every open, and reload once when it takes over so changes show up right away
+  const hadController = !!navigator.serviceWorker.controller;
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").then(r => r.update()).catch(() => {}));
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !window.__swReloaded) { window.__swReloaded = true; location.reload(); } });
 }
 
 // Plant delete handler (asks for confirmation; ids are compared as strings)
