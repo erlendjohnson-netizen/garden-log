@@ -1294,7 +1294,7 @@ let cropRegistry = [];
 
 function loadCropRegistry() {
   try {
-    const saved = localStorage.getItem("gl-demo-crops");
+    const saved = localStorage.getItem("gl-crops");
     if (saved) { cropRegistry = JSON.parse(saved); return; }
   } catch(e) {}
   cropRegistry = DEFAULT_CROPS.map(c => ({...c, varieties:[...c.varieties]}));
@@ -1302,7 +1302,7 @@ function loadCropRegistry() {
 }
 
 function saveCropRegistry() {
-  try { localStorage.setItem("gl-demo-crops", JSON.stringify(cropRegistry)); } catch(e) {}
+  try { localStorage.setItem("gl-crops", JSON.stringify(cropRegistry)); } catch(e) {}
 }
 
 function getCropKeys() { return cropRegistry.map(c=>c.key); }
@@ -1367,12 +1367,12 @@ const BEDS_DEF = [
 // ===================== STATE =====================
 let harvests = [], careLog = [], plantLog = [], selectedBed = null;
 let filterCrop = "all", deleteTarget = null, deleteType = null;
-let displayUnit = localStorage.getItem("gl-demo-unit") || "g";
+let displayUnit = localStorage.getItem("gl-unit") || "g";
 let editId = null, editType = null, addType = "harvest", calMonth = new Date().getMonth() + 1;
 let photoData = { h: null, c: null, p: null };
 
 // ===================== HELPERS =====================
-const LS = "gl-demo-"; // storage prefix for this edition
+const LS = "gl-"; // storage prefix for this edition
 
 // Local calendar date (YYYY-MM-DD). toISOString() is UTC, which rolls
 // evening entries over to tomorrow in the Americas.
@@ -1479,19 +1479,19 @@ async function loadData() {
   loadCropRegistry(); mergeLibraryCrops();
   loadPlanData();
   try {
-    const h  = localStorage.getItem("gl-demo-harvests");
-    const hv = localStorage.getItem("gl-demo-harvest-version");
-    const c  = localStorage.getItem("gl-demo-care");
-    const cv = localStorage.getItem("gl-demo-care-version");
-    const p  = localStorage.getItem("gl-demo-plants");
-    const pv = localStorage.getItem("gl-demo-plant-version");
+    const h  = localStorage.getItem("gl-harvests");
+    const hv = localStorage.getItem("gl-harvest-version");
+    const c  = localStorage.getItem("gl-care");
+    const cv = localStorage.getItem("gl-care-version");
+    const p  = localStorage.getItem("gl-plants");
+    const pv = localStorage.getItem("gl-plant-version");
 
     // Harvests — re-seed if version outdated
     if (h && hv === "v2") {
       harvests = JSON.parse(h); loadHarvestPhotos();
     } else {
       seedHarvests();
-      try { localStorage.setItem("gl-demo-harvest-version", "v2"); } catch(e) {}
+      try { localStorage.setItem("gl-harvest-version", "v2"); } catch(e) {}
     }
 
     // Care — re-seed if version outdated (bumping forces fresh Apr 8 data)
@@ -1499,7 +1499,7 @@ async function loadData() {
       careLog = JSON.parse(c);
     } else {
       seedCare();
-      try { localStorage.setItem("gl-demo-care-version", "v2"); } catch(e) {}
+      try { localStorage.setItem("gl-care-version", "v2"); } catch(e) {}
     }
 
     // Plants — re-seed if version outdated
@@ -1507,7 +1507,7 @@ async function loadData() {
       plantLog = JSON.parse(p);
     } else {
       seedPlants();
-      try { localStorage.setItem("gl-demo-plant-version", "v2"); } catch(e) {}
+      try { localStorage.setItem("gl-plant-version", "v2"); } catch(e) {}
     }
 
   } catch(e) { seedHarvests(); seedCare(); seedPlants(); }
@@ -1521,20 +1521,20 @@ function saveHarvests() {
       if (h.photo) { photos[h.id] = h.photo; }
       return Object.assign({}, h, {photo: h.photo ? true : null});
     });
-    try { localStorage.setItem("gl-demo-harvest-photos", JSON.stringify(photos)); } catch(e) {}
-    localStorage.setItem("gl-demo-harvests", JSON.stringify(slim));
+    try { localStorage.setItem("gl-harvest-photos", JSON.stringify(photos)); } catch(e) {}
+    localStorage.setItem("gl-harvests", JSON.stringify(slim));
   } catch(e) { toast("⚠️ Save failed — storage full. Try deleting old photo entries."); }
 }
 function loadHarvestPhotos() {
   try {
-    const p = JSON.parse(localStorage.getItem("gl-demo-harvest-photos")||"{}");
+    const p = JSON.parse(localStorage.getItem("gl-harvest-photos")||"{}");
     harvests = harvests.map(function(h) {
       return Object.assign({}, h, {photo: h.photo ? (p[h.id] || null) : null});
     });
   } catch(e) {}
 }
-function saveCare() { try { localStorage.setItem("gl-demo-care", JSON.stringify(careLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
-function savePlants() { try { localStorage.setItem("gl-demo-plants", JSON.stringify(plantLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
+function saveCare() { try { localStorage.setItem("gl-care", JSON.stringify(careLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
+function savePlants() { try { localStorage.setItem("gl-plants", JSON.stringify(plantLog)); } catch(e){ toast("⚠️ Couldn't save — this app's storage on your phone is full"); } }
 
 function seedHarvests() {
   harvests = [];
@@ -1578,7 +1578,7 @@ const UNIT_LABELS  = { g: "g", oz: "oz", lb: "lb", kg: "kg" };
 
 function setUnit(u) {
   displayUnit = u;
-  localStorage.setItem("gl-demo-unit", u);
+  localStorage.setItem("gl-unit", u);
   document.querySelectorAll(".unit-selector button").forEach(b => {
     b.classList.toggle("active", b.dataset.unit === u);
   });
@@ -2188,15 +2188,15 @@ function confirmDelete() {
 }
 
 // ===================== LOT VIEW =====================
-let lotWidth = parseFloat(localStorage.getItem("gl-demo-lot-width")) || 0;   // 0 = not set
-let lotDepth = parseFloat(localStorage.getItem("gl-demo-lot-depth")) || 0;
+let lotWidth = parseFloat(localStorage.getItem("gl-lot-width")) || 0;   // 0 = not set
+let lotDepth = parseFloat(localStorage.getItem("gl-lot-depth")) || 0;
 
 function saveLotDimensions() {
   const w = parseFloat(document.getElementById("lot-width").value) || 60;
   const d = parseFloat(document.getElementById("lot-depth").value) || 120;
   lotWidth = Math.min(w, d); lotDepth = Math.max(w, d);   // long side always runs up–down on the map
-  localStorage.setItem("gl-demo-lot-width", lotWidth);
-  localStorage.setItem("gl-demo-lot-depth", lotDepth);
+  localStorage.setItem("gl-lot-width", lotWidth);
+  localStorage.setItem("gl-lot-depth", lotDepth);
   drawLotCanvas();
 }
 
@@ -2345,7 +2345,7 @@ let selectedBedId = null;
 let selectedBedColor = "#1e3a10";
 let dragState = null;
 
-function saveBeds() { try { localStorage.setItem("gl-demo-beds", JSON.stringify(beds)); } catch(e){} }
+function saveBeds() { try { localStorage.setItem("gl-beds", JSON.stringify(beds)); } catch(e){} }
 function seedBeds() {
   beds = [];
   saveBeds();
@@ -2353,15 +2353,15 @@ function seedBeds() {
 
 function loadBeds() {
   try {
-    var b = localStorage.getItem("gl-demo-beds");
-    var bv = localStorage.getItem("gl-demo-bed-version");
+    var b = localStorage.getItem("gl-beds");
+    var bv = localStorage.getItem("gl-bed-version");
     if (b && bv === "v5") {
       beds = JSON.parse(b);
       return;
     }
   } catch(e) {}
   seedBeds();
-  try { localStorage.setItem("gl-demo-bed-version", "v5"); } catch(e) {}
+  try { localStorage.setItem("gl-bed-version", "v5"); } catch(e) {}
 }
 
 function rotateBedFromModal() {
@@ -6311,11 +6311,11 @@ function importAppData(input) {
     let data;
     try { data = JSON.parse(e.target.result); } catch(err) { toast("⚠️ Import failed — not a valid backup file"); return; }
     if (!data || typeof data !== "object") { toast("⚠️ Import failed — not a valid backup file"); return; }
-    // Accept backups from this edition (gl-demo-*) or from the original personal edition (gl-*)
+    // Accept backups from this edition (gl-*) or from the original personal edition (gl-*)
     const out = {};
     Object.keys(data).forEach(k => {
       if (k === "_meta" || typeof data[k] !== "string") return;
-      if (k.startsWith("gl-demo-")) out[LS + k.slice(8)] = data[k];
+      if (k.startsWith("gl-")) out[LS + k.slice(8)] = data[k];
       else if (k.startsWith("gl-")) out[LS + k.slice(3)] = data[k];
     });
     const hk = LS+"harvests";
@@ -6342,7 +6342,7 @@ function importAppData(input) {
 }
 
 // ── START OVER ──
-// Erases only this edition's keys (gl-demo-…); the personal app shares this website's storage and is left alone.
+// Erases only this edition's keys (gl-…); the personal app shares this website's storage and is left alone.
 function startOver() {
   if (!confirm("Erase all harvests, plants, beds and settings in this app and start setup from scratch? This can't be undone — export a backup first if you want to keep anything.")) return;
   const keys = [];
@@ -6400,6 +6400,7 @@ window.addEventListener("storage", e => {
 loadData();
 showSetupIfNeeded();
 
+// Personal build of Garden Log: storage prefix gl- (the demo build at /Garden-general/ uses its own prefix).
 // Shared plans: a link ending in #add=… carries plantings to merge into this garden (nothing is replaced)
 function parsePlanCode(text) {
   let t = String(text || "").trim(); const m = t.match(/(?:[?&]d=|#add=)([^&\s]+)/); if (m) t = m[1];
